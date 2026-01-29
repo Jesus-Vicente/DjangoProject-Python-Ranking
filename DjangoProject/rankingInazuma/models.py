@@ -1,14 +1,22 @@
+from django.contrib.auth.base_user import BaseUserManager
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
-from django.utils import timezone
 from django_mongodb_backend.fields import ArrayField
 from django_mongodb_backend.models import EmbeddedModel
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager,PermissionsMixin
-from django.db import models
+
+
 # Create your models here.
 
-from django.db import models
-from django.conf import settings
+
+class UsuarioManager(BaseUserManager):
+    def create_user(self, email, nombre, rol, password=None):
+        if not email:
+            raise ValueError('El usuario debe tener un email')
+        email = self.normalize_email(email)
+        usuario = self.model(email=email, nombre=nombre, rol=rol)
+
+
+
 
 class Elements(models.Model):
     code = models.IntegerField(null=False, unique=True)
