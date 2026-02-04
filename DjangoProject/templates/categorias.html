@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1 class="text-white mb-4">Categorías Inazuma</h1>
+    <div class="row">
+        {% for cat in categorias %}
+        <div class="col-md-4 mb-3">
+            <div class="card bg-dark text-white border-warning">
+                <div class="card-body">
+                    <h5 class="card-title">{{ cat.nombre }}</h5>
+                    <p class="card-text">{{ cat.descripcion }}</p>
+                    <p class="small">Elementos en esta lista: {{ cat.listaElementos|length }}</p>
+                    <a href="{% url 'go_rankings' id=cat.code %}" class="btn btn-warning">Ver Ranking</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-white">No hay categorías. Ve a "Cargar Datos" o usa el admin.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

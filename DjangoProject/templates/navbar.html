@@ -1,0 +1,18 @@
+{% load static %}
+<nav class="navbar navbar-dark shadow-sm" style="background-color: #000; border-bottom: 2px solid #ffc107;">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="{% url 'go_home' %}">
+            <span style="color: #ffc107; font-weight: 900; font-size: 1.8rem;">⚡ INAZUMA</span>
+            <span class="text-white fw-light fs-3 ms-2">RANK</span>
+        </a>
+
+        <div class="navbar-text">
+            {% if user.is_authenticated %}
+                <span class="text-white me-3">Entrenador: <strong class="text-warning">{{ user.nombre }}</strong></span>
+                <a href="{% url 'logout_user' %}" class="btn btn-outline-light btn-sm">Salir</a>
+            {% else %}
+                <span class="text-secondary small">MODO INVITADO</span>
+            {% endif %}
+        </div>
+    </div>
+</nav>

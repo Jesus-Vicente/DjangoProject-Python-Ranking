@@ -1,64 +1,111 @@
-from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin
+from django_mongodb_backend.fields import ArrayField
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
-from django_mongodb_backend.fields import ArrayField
-from django_mongodb_backend.models import EmbeddedModel
-
-
-# Create your models here.
-
+from django.utils import timezone
 
 class UsuarioManager(BaseUserManager):
     def create_user(self, email, nombre, rol, password=None):
-        if not email:
-            raise ValueError('El usuario debe tener un email')
+        if not email or not nombre:
+            raise ValueError('Debes rellenar los campos requeridos (email, nombre)')
         email = self.normalize_email(email)
         usuario = self.model(email=email, nombre=nombre, rol=rol)
+        usuario.set_password(password)
+        usuario.save(using=self._db)
+        return usuario
+
+    def create_superuser(self, email, nombre, rol='admin', password=None):
+        usuario = self.create_user(email, nombre, rol, password)
+        usuario.is_superuser = True
+        usuario.is_staff = True
+        usuario.save(using=self._db)
+        return usuario
+
+class Usuario(AbstractBaseUser, PermissionsMixin):
+    ROLES = (
+        ('admin', 'Administrador'),
+        ('usuario', 'Usuario'),
+    )
+    email = models.EmailField(unique=True)
+    nombre = models.CharField(max_length=150, unique=True)
+    rol = models.CharField(max_length=20, choices=ROLES, default='usuario')
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    objects = UsuarioManager()
+
+    USERNAME_FIELD = 'nombre'
+    REQUIRED_FIELDS = ['email', 'rol']
+
+    class Meta:
+        db_table = 'usuarios'
+
+    def __str__(self):
+        return self.nombre
 
 
-
-
-class Elements(models.Model):
+class Categoria(models.Model):
     code = models.IntegerField(null=False, unique=True)
-    firstName = models.CharField(max_length=150)
-    lastName = models.CharField(max_length=150)
-    fullName = models.CharField(max_length=300)
+    nombre = models.CharField(max_length=300)
+    descripcion = models.CharField(max_length=300)
 
-    image = models.CharField(max_length=300)
+    listaElementos = ArrayField(models.IntegerField(), blank=True, null=True, default=list)
+
+    class Meta:
+        db_table = 'categorias'
+        managed = False
+
+class Temporada(models.Model):
+    code = models.IntegerField(null=False, unique=True)
+    nombre = models.CharField(max_length=150)
+    descripcion = models.CharField(max_length=300)
+
+    class Meta:
+        db_table = 'temporadas'
+        managed = False
+
+    def __str__(self):
+        return self.nombre
+
+class Elemento(models.Model):
+    code = models.IntegerField(null=False, unique=True)
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField() #
+    categoriaCode = models.IntegerField(null=False)
+    temporadaCode = models.IntegerField(null=False)
+
+    posicion = models.CharField(max_length=50, blank=True, null=True)
+    afinidad = models.CharField(max_length=50, blank=True, null=True)
+
     imageUrl = models.CharField(max_length=1000)
-    category = ArrayField(models.IntegerField(), null=True, blank=True, default=list)
 
     class Meta:
-        db_table = ('elementos')
+        db_table = 'elementos'
         managed = False
 
     def __str__(self):
-        return self.fullName
+        return self.nombre
 
-class Category(EmbeddedModel):
-    code = models.IntegerField(null=False)
-    name = models.CharField(max_length=300)
-    description = models.CharField(max_length=300)
-
-    class Meta:
-        db_table = ('categories')
-
-class Review(EmbeddedModel):
-    user = models.CharField(max_length=300)
-    characterCode = models.IntegerField(null=False)
-    reviewDate = models.DateField()
-    rating = models.PositiveIntegerField(null=False, validators=[MinValueValidator(0), MaxValueValidator(5)])
-    comments = models.TextField()
-
-    def __str__(self):
-        return self.user + " " + str(self.rating)
+class Reviews(models.Model):
+    usuario = models.CharField(max_length=150)
+    elementoCode = models.IntegerField(null=False)
+    puntuacion = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    comentario = models.TextField()
+    fecha = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        db_table = ('reviews')
+        db_table = 'reviews'
         managed = False
 
-class Raking(EmbeddedModel):
-    user = models.CharField(max_length=300)
-    rankingDate = models.DateField()
-    categoryCode = models.IntegerField(null=False)
-    rankingList = ArrayField(models.IntegerField(), null=True, blank=True, default=list)
+class Ranking(models.Model):
+    usuario= models.CharField(max_length=150)
+    nombre = models.CharField(max_length=200)
+
+    rankinLista = ArrayField(models.JSONField(), null=True, blank=True, default=list)
+
+    fecha_creacion = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'rankings'
+        managed = False

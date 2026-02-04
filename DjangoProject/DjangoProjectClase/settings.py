@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'rankingInazuma',
+    'django_bootstrap5'
 ]
 
 MIDDLEWARE = [
@@ -85,6 +88,9 @@ DATABASES = {
     },
 }
 
+DATABASE_ROUTERS = ['DjangoProjectClase.db_routers.MongoRouter']
+
+AUTH_USER_MODEL = 'rankingInazuma.Usuario'
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -121,3 +127,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body %}
+<div class="container py-5">
+    <h3 class="mb-4 text-center text-warning" style="text-shadow: 2px 2px #062D76;">
+        Gestión de Datos: Raimon Hub
+    </h3>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card p-4 shadow-sm bg-dark text-white border-warning">
+                <h5>Web Scraping Automático</h5>
+                <p class="small text-secondary">Extrae personajes directamente de la Wiki de Inazuma Eleven.</p>
+                <form method="post" action="{% url 'go_data_load' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="scraping">
+                    <button type="submit" class="btn btn-warning w-100">
+                        ¡Llamar al equipo! (Scraping)
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <form id="csvForm" method="post" enctype="multipart/form-data" class="card p-4 shadow-sm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="csv">
+                <div class="mb-3">
+                    <label for="csvFile" class="form-label">Cargar Jugadores vía CSV</label>
+                    <input class="form-control" type="file" id="csvFile" name="csvFile" accept=".csv">
+                </div>
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" id="previewBtn" class="btn btn-outline-primary">Previsualizar</button>
+                    <button type="submit" class="btn btn-primary">Guardar CSV</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="previewContainer" class="mt-5" style="display:none;">
+        <h4 class="text-white">Vista previa del fichaje:</h4>
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-bordered" id="previewTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Mantenemos la lógica exacta del profesor para la previsualización del CSV
+    document.getElementById('previewBtn').addEventListener('click', function () {
+        const fileInput = document.getElementById('csvFile');
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('Selecciona un archivo CSV para previsualizar.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const text = e.target.result;
+            const rows = text.split('\n').map(row => row.split(','));
+            const tableHead = document.querySelector('#previewTable thead');
+            const tableBody = document.querySelector('#previewTable tbody');
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            if (rows.length > 0) {
+                const headerRow = document.createElement('tr');
+                rows[0].forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header.trim();
+                    headerRow.appendChild(th);
+                });
+                tableHead.appendChild(headerRow);
+            }
+
+            rows.slice(1, 6).forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach((cell, index) => {
+                    const td = document.createElement('td');
+                    td.textContent = cell.trim();
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+            document.getElementById('previewContainer').style.display = 'block';
+        };
+        reader.readAsText(file);
+    });
+</script>
+{% endblock %}

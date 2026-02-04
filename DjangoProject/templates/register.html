@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block body %}
+<div class="container d-flex justify-content-center mt-5">
+    <div class="card p-4 shadow bg-light" style="max-width: 500px; width: 100%;">
+        <h2 class="text-center mb-4">Únete al Raimon</h2>
+        <form method="post">
+            {% csrf_token %}
+            {% bootstrap_form form %}
+            <div class="d-grid mt-3">
+                <button type="submit" class="btn btn-warning">Registrarse</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
