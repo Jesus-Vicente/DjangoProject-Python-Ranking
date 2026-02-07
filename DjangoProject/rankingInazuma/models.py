@@ -1,6 +1,6 @@
 from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
-from django_mongodb_backend.fields import ArrayField
+from django_mongodb_backend.fields import ArrayField, ObjectIdAutoField
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils import timezone
@@ -23,6 +23,7 @@ class UsuarioManager(BaseUserManager):
         return usuario
 
 class Usuario(AbstractBaseUser, PermissionsMixin):
+    id = ObjectIdAutoField(primary_key=True) # Campo obligatorio para MongoDB
     ROLES = (
         ('admin', 'Administrador'),
         ('usuario', 'Usuario'),
@@ -46,6 +47,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
 
 class Categoria(models.Model):
+    id = ObjectIdAutoField(primary_key=True) # Necesario para mapear el _id de Mongo
     code = models.IntegerField(null=False, unique=True)
     nombre = models.CharField(max_length=300)
     descripcion = models.CharField(max_length=300)
@@ -57,6 +59,7 @@ class Categoria(models.Model):
         managed = False
 
 class Temporada(models.Model):
+    id = ObjectIdAutoField(primary_key=True)
     code = models.IntegerField(null=False, unique=True)
     nombre = models.CharField(max_length=150)
     descripcion = models.CharField(max_length=300)
@@ -69,9 +72,10 @@ class Temporada(models.Model):
         return self.nombre
 
 class Elemento(models.Model):
+    id = ObjectIdAutoField(primary_key=True)
     code = models.IntegerField(null=False, unique=True)
     nombre = models.CharField(max_length=200)
-    descripcion = models.TextField() #
+    descripcion = models.TextField()
     categoriaCode = models.IntegerField(null=False)
     temporadaCode = models.IntegerField(null=False)
 
@@ -88,6 +92,7 @@ class Elemento(models.Model):
         return self.nombre
 
 class Reviews(models.Model):
+    id = ObjectIdAutoField(primary_key=True)
     usuario = models.CharField(max_length=150)
     elementoCode = models.IntegerField(null=False)
     puntuacion = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
@@ -99,6 +104,7 @@ class Reviews(models.Model):
         managed = False
 
 class Ranking(models.Model):
+    id = ObjectIdAutoField(primary_key=True)
     usuario= models.CharField(max_length=150)
     nombre = models.CharField(max_length=200)
 

@@ -1,21 +1,16 @@
+# Example of what your router should look like
 class MongoRouter:
     def db_for_read(self, model, **hints):
-        if getattr(model._meta, 'managed', True) is False:
+        if model._meta.app_label == 'rankingInazuma':
             return 'mongodb'
-        return 'default'
+        return None
 
     def db_for_write(self, model, **hints):
-        if getattr(model._meta, 'managed', True) is False:
+        if model._meta.app_label == 'rankingInazuma':
             return 'mongodb'
-        return 'default'
-
-    def allow_relation(self, obj1, obj2, **hints):
-        return True
+        return None
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
-        model = hints.get('model')
-
-        if model and getattr(model, 'managed', True) is False:
-            return False
-
-        return db == 'default'
+        if app_label == 'rankingInazuma':
+            return db == 'mongodb'
+        return None

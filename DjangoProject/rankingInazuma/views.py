@@ -1,3 +1,5 @@
+import csv
+
 import requests
 import json
 from bs4 import BeautifulSoup
@@ -155,3 +157,5 @@ def data_load(request):
             return redirect('go_home')
 
     return render(request, 'data_load.html')
+
+
