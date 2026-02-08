@@ -2,16 +2,78 @@
 {% load django_bootstrap5 %}
 
 {% block body %}
-<div class="container d-flex justify-content-center mt-5">
-    <div class="card p-4 shadow bg-light" style="max-width: 500px; width: 100%;">
-        <h2 class="text-center mb-4">Únete al Raimon</h2>
-        <form method="post">
+<div class="container-fluid main-bg d-flex align-items-center justify-content-center min-vh-100 py-5">
+    <div class="card p-4 bg-dark text-white border-warning shadow-lg animate__animated animate__fadeInUp"
+         style="width: 100%; max-width: 500px; border-width: 2px; border-radius: 20px;">
+
+        <div class="text-center mb-4">
+            <div class="d-inline-block p-3 rounded-circle bg-warning mb-3 shadow-glow-yellow">
+                <i class="bi bi-person-plus-fill text-dark" style="font-size: 2rem;"></i>
+            </div>
+            <h2 class="text-warning fw-bold mb-0 text-uppercase">Nuevo Fichaje</h2>
+            <p class="text-info small tracking-widest mt-1">CREA TU PERFIL DE ENTRENADOR</p>
+        </div>
+
+        <form method="post" class="register-form">
             {% csrf_token %}
-            {% bootstrap_form form %}
-            <div class="d-grid mt-3">
-                <button type="submit" class="btn btn-warning">Registrarse</button>
+
+            <div class="custom-form mb-3">
+                {% bootstrap_form form %}
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-warning fw-bold py-2 shadow-sm hvr-bounce-in">
+                    <i class="bi bi-check-circle-fill me-2"></i> FIRMAR CONTRATO
+                </button>
             </div>
         </form>
+
+        <hr class="border-secondary mt-4 opacity-25">
+
+        <div class="text-center">
+            <p class="mb-0 small text-muted">¿Ya eres parte del Raimon?</p>
+            <a href="{% url 'do_login' %}" class="text-info fw-bold text-decoration-none">
+                <i class="bi bi-box-arrow-in-right"></i> Acceder a mi cuenta
+            </a>
+        </div>
     </div>
 </div>
+
+<style>
+    /* Fondo coherente con el resto de la App */
+    .main-bg {
+        background: radial-gradient(circle at center, #0a192f 0%, #020c1b 100%);
+    }
+
+    /* Estilo para los inputs de Bootstrap 5 en modo oscuro */
+    .custom-form input, .custom-form select {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333 !important;
+        color: white !important;
+        border-radius: 10px;
+    }
+
+    .custom-form input:focus {
+        border-color: #ffc107 !important;
+        box-shadow: 0 0 10px rgba(255, 193, 7, 0.4) !important;
+    }
+
+    .custom-form label {
+        color: #adb5bd;
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+
+    .shadow-glow-yellow {
+        box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+    }
+
+    /* Pequeña animación para el botón */
+    .hvr-bounce-in {
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .hvr-bounce-in:hover {
+        transform: scale(1.05);
+    }
+</style>
 {% endblock %}

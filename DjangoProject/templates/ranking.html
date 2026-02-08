@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body %}
+<div class="container py-4 animate__animated animate__fadeIn">
+    <div class="text-center mb-5">
+        <h2 class="text-warning fw-bold" style="text-shadow: 2px 2px #000;">
+            ⚡ CONFIGURANDO TOP: {{ categoria.nombre }} ⚡
+        </h2>
+        <p class="text-info text-uppercase small tracking-widest">Arrastra a los elegidos a sus puestos de honor</p>
+    </div>
+
+    <div class="row g-3 justify-content-center mb-5" id="top-slots">
+        {% for i in "12345" %}
+            <div class="col-6 col-sm-4 col-md-2">
+                <div class="border rounded p-2 bg-dark text-center slot border-info shadow-sm"
+                     data-position="{{ forloop.counter }}" style="min-height: 180px; transition: 0.3s;">
+                    <h5 class="mb-2 text-info fw-bold">#{{ forloop.counter }}</h5>
+                    <div class="slot-drop-area d-flex justify-content-center align-items-center flex-wrap"
+                         style="min-height: 120px; border: 2px dashed rgba(13, 202, 240, 0.3); border-radius: 10px;">
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <hr class="border-secondary opacity-25">
+
+    <h4 class="text-center mb-4 text-white-50"><i class="bi bi-people-fill"></i> JUGADORES DISPONIBLES</h4>
+    <div class="row g-3 px-3 justify-content-center" id="all-items" style="min-height: 150px; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px;">
+        {% for item in elementos %}
+            <div class="col-4 col-md-2 col-lg-1">
+                <div class="card p-2 text-center bg-secondary text-white shadow-sm hvr-grow player-card"
+                     data-id="{{ item.code }}" data-nombre="{{ item.nombre }}" style="cursor: grab; border: none;">
+                    <img src="{{ item.imageUrl }}" class="mx-auto mb-1" alt="{{ item.nombre }}"
+                         style="height:50px; width:50px; object-fit:contain; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));">
+                    <h6 class="m-0 fw-bold" style="font-size: 0.7rem; overflow: hidden; white-space: nowrap;">{{ item.nombre }}</h6>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <form id="saveTopForm" method="POST" action="{% url 'save_top' %}">
+        {% csrf_token %}
+        <input type="hidden" name="categoriaCode" value="{{ categoria.code }}">
+        <input type="hidden" name="rankinLista" id="orderInput">
+
+        <div class="text-center mt-5">
+            <button type="button" class="btn btn-warning btn-lg fw-bold px-5 shadow-glow-yellow" id="saveTopBtn">
+                <i class="bi bi-cloud-upload-fill me-2"></i> CONFIRMAR ESTRATEGIA
+            </button>
+            <div class="mt-2">
+                <a href="{% url 'show_categories' %}" class="text-muted small text-decoration-none">
+                    <i class="bi bi-arrow-left"></i> Cambiar categoría
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+
+<style>
+    .slot-drop-area .player-card { width: 100% !important; transform: scale(0.9); }
+    .slot.active-slot { border-color: #ffc107 !important; background: rgba(255, 193, 7, 0.1) !important; }
+    .shadow-glow-yellow { box-shadow: 0 0 15px rgba(255, 193, 7, 0.4); }
+    .hvr-grow { transition: transform 0.2s; }
+    .hvr-grow:hover { transform: scale(1.1); z-index: 10; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const allItems = document.getElementById('all-items');
+
+        // Configuración de la reserva
+        Sortable.create(allItems, {
+            group: 'shared',
+            animation: 150,
+            ghostClass: 'bg-info'
+        });
+
+        // Configuración de cada Slot (Top 1-5)
+        document.querySelectorAll('.slot-drop-area').forEach((slotArea) => {
+            Sortable.create(slotArea, {
+                group: 'shared',
+                animation: 150,
+                onAdd: (evt) => {
+                    // Si ya hay un jugador en el slot, devolvemos el antiguo a la reserva
+                    if (slotArea.children.length > 1) {
+                        const existingItem = slotArea.children[0] === evt.item ? slotArea.children[1] : slotArea.children[0];
+                        allItems.appendChild(existingItem);
+                    }
+                }
+            });
+        });
+
+        document.getElementById('saveTopBtn').addEventListener('click', () => {
+            const rankingData = [];
+
+            document.querySelectorAll('.slot').forEach((slot) => {
+                const pos = slot.dataset.position;
+                const card = slot.querySelector('.player-card');
+                if (card) {
+                    // Guardamos como objeto JSON para tu ArrayField
+                    rankingData.push({
+                        "posicion": parseInt(pos),
+                        "elementoCode": parseInt(card.dataset.id),
+                        "nombre": card.dataset.nombre
+                    });
+                }
+            });
+
+            if(rankingData.length === 0){
+                alert("¡Entrenador! Necesitas al menos un jugador en el Top.");
+                return;
+            }
+
+            document.getElementById('orderInput').value = JSON.stringify(rankingData);
+            document.getElementById('saveTopForm').submit();
+        });
+    });
+</script>
+{% endblock %}

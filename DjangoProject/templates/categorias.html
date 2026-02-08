@@ -1,23 +1,147 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block body %}
-<div class="container mt-5">
-    <h1 class="text-white mb-4">Categorías Inazuma</h1>
+<div class="container py-5">
+    <h2 class="text-white mb-4"><i class="bi bi-trophy-fill text-warning"></i> Gestión de Categorías</h2>
+
     <div class="row">
-        {% for cat in categorias %}
-        <div class="col-md-4 mb-3">
-            <div class="card bg-dark text-white border-warning">
+        <div class="col-md-5">
+            <div class="card bg-dark text-white border-primary shadow">
+                <div class="card-header border-primary">
+                    <h4 class="mb-0">Nueva Categoría</h4>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">{{ cat.nombre }}</h5>
-                    <p class="card-text">{{ cat.descripcion }}</p>
-                    <p class="small">Elementos en esta lista: {{ cat.listaElementos|length }}</p>
-                    <a href="{% url 'go_rankings' id=cat.code %}" class="btn btn-warning">Ver Ranking</a>
+                    <form method="POST" id="formCategoria">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Grupo</label>
+                            <input type="text" name="name" class="form-control" placeholder="Ej: Delanteros Raimon" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">URL del Logo/Icono</label>
+                            <input type="url" name="logo" class="form-control" placeholder="https://..." required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea name="description" class="form-control" rows="2"></textarea>
+                        </div>
+
+                        <input type="hidden" name="items_seleccionados" id="items_seleccionados" value="[]">
+
+                        <div class="mb-3">
+                            <label class="form-label text-info">Jugadores Seleccionados: <span id="contador" class="badge bg-info">0</span></label>
+                            <div id="lista-visual" class="d-flex flex-wrap gap-2 p-2 border border-secondary rounded style-scroll" style="min-height: 50px; max-height: 150px; overflow-y: auto;">
+                                </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Crear Categoría</button>
+                    </form>
                 </div>
             </div>
         </div>
-        {% empty %}
-        <p class="text-white">No hay categorías. Ve a "Cargar Datos" o usa el admin.</p>
-        {% endfor %}
+
+        <div class="col-md-7">
+            <div class="card bg-dark text-white border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Selecciona los Miembros</h5>
+                    <input type="text" id="buscador" class="form-control form-control-sm w-50" placeholder="Buscar jugador...">
+                </div>
+                <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush" id="listaJugadores">
+                        {% for el in elementos %}
+                        <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center border-secondary">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ el.imageUrl }}" width="40" height="40" class="rounded-circle me-3" style="object-fit: cover;">
+                                <div>
+                                    <span class="fw-bold">{{ el.nombre }}</span><br>
+                                    <small class="text-secondary">{{ el.posicion }}</small>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-warning btn-add" 
+                                    data-id="{{ el.code }}" data-nombre="{{ el.nombre }}">
+                                <i class="bi bi-plus-lg"></i> Añadir
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-5">
+        <h3 class="text-white mb-3">Categorías Activas</h3>
+        <div class="table-responsive">
+            <table class="table table-dark table-hover border-primary">
+                <thead>
+                    <tr>
+                        <th>Cód</th>
+                        <th>Logo</th>
+                        <th>Nombre</th>
+                        <th>Nº Miembros</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categorias %}
+                    <tr>
+                        <td>{{ cat.code }}</td>
+                        <td><img src="{{ cat.logo }}" width="30"></td>
+                        <td>{{ cat.name }}</td>
+                        <td>{{ cat.listaElementos|length }}</td>
+                        <td>
+                            <a href="{% url 'delete_category' cat.code %}" class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+
+<script>
+    let seleccionados = [];
+
+    // Lógica para añadir/quitar jugadores
+    document.querySelectorAll('.btn-add').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = parseInt(this.dataset.id);
+            const nombre = this.dataset.nombre;
+
+            if (!seleccionados.includes(id)) {
+                seleccionados.push(id);
+                this.classList.replace('btn-outline-warning', 'btn-success');
+                this.innerHTML = '<i class="bi bi-check"></i>';
+                
+                // Añadir tag visual
+                const tag = document.createElement('span');
+                tag.className = 'badge bg-secondary p-2';
+                tag.id = `tag-${id}`;
+                tag.innerHTML = `${nombre} <i class="bi bi-x-circle ms-1 cursor-pointer" onclick="eliminar(${id})"></i>`;
+                document.getElementById('lista-visual').appendChild(tag);
+            }
+            
+            actualizarCampos();
+        });
+    });
+
+    function actualizarCampos() {
+        document.getElementById('items_seleccionados').value = JSON.stringify(seleccionados);
+        document.getElementById('contador').innerText = seleccionados.length;
+    }
+
+    // Buscador en tiempo real para que el admin no se vuelva loco
+    document.getElementById('buscador').addEventListener('keyup', function() {
+        let filtro = this.value.toLowerCase();
+        let items = document.querySelectorAll('#listaJugadores li');
+        items.forEach(item => {
+            let texto = item.innerText.toLowerCase();
+            item.style.display = texto.includes(filtro) ? 'flex' : 'none';
+        });
+    });
+</script>
 {% endblock %}

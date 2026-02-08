@@ -47,7 +47,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
 
 class Categoria(models.Model):
-    id = ObjectIdAutoField(primary_key=True) # Necesario para mapear el _id de Mongo
+    id = ObjectIdAutoField(primary_key=True)
     code = models.IntegerField(null=False, unique=True)
     nombre = models.CharField(max_length=300)
     descripcion = models.CharField(max_length=300)
@@ -56,7 +56,7 @@ class Categoria(models.Model):
 
     class Meta:
         db_table = 'categorias'
-        managed = False
+        managed = True
 
 class Temporada(models.Model):
     id = ObjectIdAutoField(primary_key=True)
@@ -66,7 +66,7 @@ class Temporada(models.Model):
 
     class Meta:
         db_table = 'temporadas'
-        managed = False
+        managed = True
 
     def __str__(self):
         return self.nombre
@@ -82,11 +82,28 @@ class Elemento(models.Model):
     posicion = models.CharField(max_length=50, blank=True, null=True)
     afinidad = models.CharField(max_length=50, blank=True, null=True)
 
+    equipos = ArrayField(models.CharField(max_length=200), blank=True, null=True, default=list)
+
     imageUrl = models.CharField(max_length=1000)
 
     class Meta:
         db_table = 'elementos'
-        managed = False
+        managed = True
+
+    def __str__(self):
+        return self.nombre
+
+class Equipos(models.Model):
+    id = ObjectIdAutoField(primary_key=True)
+    code = models.IntegerField(null=False, unique=True)
+    nombre = models.CharField(max_length=150, unique=True)
+    descripcion = models.CharField(max_length=300)
+
+    imageUrl = models.CharField(max_length=1000)
+
+    class Meta:
+        db_table = 'equipos'
+        managed = True
 
     def __str__(self):
         return self.nombre
@@ -101,12 +118,15 @@ class Reviews(models.Model):
 
     class Meta:
         db_table = 'reviews'
-        managed = False
+        managed = True
+
+    def __str__(self):
+        return self.usuario + " " + str(self.puntuacion)
 
 class Ranking(models.Model):
     id = ObjectIdAutoField(primary_key=True)
     usuario= models.CharField(max_length=150)
-    nombre = models.CharField(max_length=200)
+    categoriaCode = models.IntegerField(null=False)
 
     rankinLista = ArrayField(models.JSONField(), null=True, blank=True, default=list)
 
@@ -114,4 +134,7 @@ class Ranking(models.Model):
 
     class Meta:
         db_table = 'rankings'
-        managed = False
+        managed = True
+
+    def __str__(self):
+        return f"{self.usuario} - Categoría: {self.categoriaCode}"

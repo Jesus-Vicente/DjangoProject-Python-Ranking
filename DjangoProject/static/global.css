@@ -1,101 +1,61 @@
+/* --- CONFIGURACIÓN GLOBAL --- */
+:root {
+    --inazuma-gold: #ffc107;
+    --dark-space: #020c1b;
+    --deep-blue: #062D76;
+}
+
 body {
-    background-color: #062D76;
-    background-image: url('images');
-    background-repeat: repeat;
-    background-position: top left;
-    background-size: 80px 80px;
+    margin: 0;
+    padding: 0;
+    background-color: var(--dark-space);
+    /* Degradado radial para eliminar cualquier imagen de fondo previa */
+    background-image: radial-gradient(circle at center, #0a192f 0%, var(--dark-space) 100%);
+    background-attachment: fixed;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
 }
 
-/* Marca de agua */
+/* Eliminamos marcas de agua antiguas */
 body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #062D76;
-    opacity: 0.65;
-    z-index: -1;
+    content: none !important;
 }
 
-
+/* --- CONTENEDOR PRINCIPAL --- */
 .main-content {
-    background-color: #f5f5f5;
-    max-width: 1050px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 2rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    max-width: 1100px;
+    margin: 100px auto 2rem auto;
+    padding: 2.5rem;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-
-/* Icono usuario */
-.user-menu {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    font-size: 1.8rem;
-    cursor: pointer;
+/* --- CARDS Y HOVERS --- */
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Efecto hover en las cards */
 .card-hover:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease-in-out;
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4) !important;
 }
 
+/* Colores de categorías */
+.bg-dark-blue { background-color: var(--deep-blue) !important; }
+.bg-blue      { background-color: #6D66F1 !important; }
+.bg-yellow    { background-color: var(--inazuma-gold) !important; }
+
+/* --- ICONOS Y UTILIDADES --- */
 .icon-white {
-    filter: invert(100%);
+    filter: brightness(0) invert(1);
 }
-
-.bg-dark-blue {
-    background-color: #062D76 !important;
-}
-
-.bg-blue {
-    background-color: #6D66F1 !important;
-}
-
-.bg-purple {
-    background-color: #bc94f4 !important;
-}
-
-.bg-yellow {
-    background-color: #faca56 !important;
-}
-
 
 .navbar-brand {
-    font-family: 'Cinzel', serif;
-    font-weight: 700;
-    font-size: 3rem !important;
-    letter-spacing: 1px;
-    color: #062D76 !important;
+    font-weight: 900;
+    color: var(--inazuma-gold) !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
-
-
-.navbar {
-    background-color: transparent !important;
-    position: fixed;
-    width: 100%;
-    z-index: 1000;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-}
-
-
-.user-icon {
-    color: #062D76;
-    width: 50px;
-    height: 50px;
-    cursor: pointer;
-}
-
-.navbar {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-}
-
