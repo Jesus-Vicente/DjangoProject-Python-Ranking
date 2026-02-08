@@ -16,11 +16,11 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             <label class="form-label">Nombre del Grupo</label>
-                            <input type="text" name="name" class="form-control" placeholder="Ej: Delanteros Raimon" required>
+                            <input type="text" name="nombre" class="form-control" placeholder="Ej: Delanteros Raimon" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">URL del Logo/Icono</label>
-                            <input type="url" name="logo" class="form-control" placeholder="https://..." required>
+                            <input type="url" name="logo" class="form-control" placeholder="https://...">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Descripción</label>
@@ -30,9 +30,9 @@
                         <input type="hidden" name="items_seleccionados" id="items_seleccionados" value="[]">
 
                         <div class="mb-3">
-                            <label class="form-label text-info">Jugadores Seleccionados: <span id="contador" class="badge bg-info">0</span></label>
-                            <div id="lista-visual" class="d-flex flex-wrap gap-2 p-2 border border-secondary rounded style-scroll" style="min-height: 50px; max-height: 150px; overflow-y: auto;">
-                                </div>
+                            <label class="form-label text-info">Miembros: <span id="contador" class="badge bg-info">0</span></label>
+                            <div id="lista-visual" class="d-flex flex-wrap gap-2 p-2 border border-secondary rounded" style="min-height: 50px; max-height: 150px; overflow-y: auto;">
+                            </div>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100">Crear Categoría</button>
@@ -44,10 +44,10 @@
         <div class="col-md-7">
             <div class="card bg-dark text-white border-secondary">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Selecciona los Miembros</h5>
-                    <input type="text" id="buscador" class="form-control form-control-sm w-50" placeholder="Buscar jugador...">
+                    <h5 class="mb-0">Añadir Miembros</h5>
+                    <input type="text" id="buscador" class="form-control form-control-sm w-50" placeholder="Buscar por nombre o posición...">
                 </div>
-                <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
+                <div class="card-body p-0" style="max-height: 430px; overflow-y: auto;">
                     <ul class="list-group list-group-flush" id="listaJugadores">
                         {% for el in elementos %}
                         <li class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center border-secondary">
@@ -58,9 +58,9 @@
                                     <small class="text-secondary">{{ el.posicion }}</small>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-warning btn-add" 
+                            <button type="button" class="btn btn-sm btn-outline-warning btn-add"
                                     data-id="{{ el.code }}" data-nombre="{{ el.nombre }}">
-                                <i class="bi bi-plus-lg"></i> Añadir
+                                <i class="bi bi-plus-lg"></i>
                             </button>
                         </li>
                         {% endfor %}
@@ -73,13 +73,13 @@
     <div class="mt-5">
         <h3 class="text-white mb-3">Categorías Activas</h3>
         <div class="table-responsive">
-            <table class="table table-dark table-hover border-primary">
+            <table class="table table-dark table-hover">
                 <thead>
                     <tr>
                         <th>Cód</th>
                         <th>Logo</th>
                         <th>Nombre</th>
-                        <th>Nº Miembros</th>
+                        <th>Miembros</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -87,11 +87,14 @@
                     {% for cat in categorias %}
                     <tr>
                         <td>{{ cat.code }}</td>
-                        <td><img src="{{ cat.logo }}" width="30"></td>
-                        <td>{{ cat.name }}</td>
+                        <td>
+                            <img src="{{ cat.logo }}" width="35" height="35" class="rounded"
+                                 onerror="this.onerror=null; this.src='{% static 'images/default-categoria-icono.png' %}';">
+                        </td>
+                        <td class="text-warning fw-bold">{{ cat.nombre }}</td>
                         <td>{{ cat.listaElementos|length }}</td>
                         <td>
-                            <a href="{% url 'delete_category' cat.code %}" class="btn btn-danger btn-sm">
+                            <a href="{% url 'delete_category' cat.code %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('¿Seguro que quieres borrarla?')">
                                 <i class="bi bi-trash"></i>
                             </a>
                         </td>
@@ -106,7 +109,6 @@
 <script>
     let seleccionados = [];
 
-    // Lógica para añadir/quitar jugadores
     document.querySelectorAll('.btn-add').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = parseInt(this.dataset.id);
@@ -116,31 +118,41 @@
                 seleccionados.push(id);
                 this.classList.replace('btn-outline-warning', 'btn-success');
                 this.innerHTML = '<i class="bi bi-check"></i>';
-                
-                // Añadir tag visual
+
                 const tag = document.createElement('span');
-                tag.className = 'badge bg-secondary p-2';
+                tag.className = 'badge bg-primary p-2 animate__animated animate__bounceIn';
                 tag.id = `tag-${id}`;
-                tag.innerHTML = `${nombre} <i class="bi bi-x-circle ms-1 cursor-pointer" onclick="eliminar(${id})"></i>`;
+                tag.innerHTML = `${nombre} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="eliminar(${id})"></i>`;
                 document.getElementById('lista-visual').appendChild(tag);
+
+                actualizarCampos();
             }
-            
-            actualizarCampos();
         });
     });
+
+    window.eliminar = function(id) {
+        seleccionados = seleccionados.filter(item => item !== id);
+        const tag = document.getElementById(`tag-${id}`);
+        if (tag) tag.remove();
+
+        const btn = document.querySelector(`.btn-add[data-id="${id}"]`);
+        if (btn) {
+            btn.classList.replace('btn-success', 'btn-outline-warning');
+            btn.innerHTML = '<i class="bi bi-plus-lg"></i>';
+        }
+        actualizarCampos();
+    }
 
     function actualizarCampos() {
         document.getElementById('items_seleccionados').value = JSON.stringify(seleccionados);
         document.getElementById('contador').innerText = seleccionados.length;
     }
 
-    // Buscador en tiempo real para que el admin no se vuelva loco
-    document.getElementById('buscador').addEventListener('keyup', function() {
+    document.getElementById('buscador').addEventListener('input', function() {
         let filtro = this.value.toLowerCase();
-        let items = document.querySelectorAll('#listaJugadores li');
-        items.forEach(item => {
+        document.querySelectorAll('#listaJugadores li').forEach(item => {
             let texto = item.innerText.toLowerCase();
-            item.style.display = texto.includes(filtro) ? 'flex' : 'none';
+            item.style.setProperty('display', texto.includes(filtro) ? 'flex' : 'none', 'important');
         });
     });
 </script>

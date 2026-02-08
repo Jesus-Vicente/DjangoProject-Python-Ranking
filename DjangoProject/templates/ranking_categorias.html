@@ -20,12 +20,12 @@
                         <div class="card-body py-5 d-flex flex-column align-items-center justify-content-center">
 
                             <div class="logo-container mb-4">
-                                <img src="{{ i.logo }}" alt="{{ i.name }}"
+                                <img src="{{ i.logo }}" alt="{{ i.nombre }}"
                                      class="category-icon img-fluid"
-                                     onerror="this.src='{% static 'images/default-icon.png' %}';">
+                                     onerror="this.onerror=null; this.src='{% static 'images/default-categoria-icono.png' %}';">
                             </div>
 
-                            <h3 class="card-title h4 fw-black text-uppercase">{{ i.name }}</h3>
+                            <h3 class="card-title h4 fw-black text-uppercase">{{ i.nombre }}</h3>
 
                             <div class="mt-3">
                                 <span class="btn btn-outline-warning btn-sm px-4 rounded-pill">Entrar</span>
@@ -56,17 +56,11 @@
         border-radius: 20px;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-
     .card-selection:hover {
         transform: translateY(-15px) scale(1.05);
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8) !important;
         border: 1px solid #ffc107 !important;
     }
-
-    .card-selection:hover .category-icon {
-        filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.8));
-    }
-
     .logo-container {
         width: 100px;
         height: 100px;
@@ -76,20 +70,12 @@
         background: rgba(255, 255, 255, 0.03);
         border-radius: 50%;
         padding: 15px;
-        transition: background 0.3s;
     }
-
-    .card-selection:hover .logo-container {
-        background: rgba(255, 193, 7, 0.1);
-    }
-
     .category-icon {
         max-width: 70px;
         max-height: 70px;
         object-fit: contain;
-        transition: all 0.3s ease;
     }
-
     .fw-black { font-weight: 900; }
 </style>
 {% endblock %}

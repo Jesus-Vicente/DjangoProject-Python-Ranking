@@ -51,6 +51,7 @@ class Categoria(models.Model):
     code = models.IntegerField(null=False, unique=True)
     nombre = models.CharField(max_length=300)
     descripcion = models.CharField(max_length=300)
+    logo = models.CharField(max_length=1000, blank=True, null=True)
 
     listaElementos = ArrayField(models.IntegerField(), blank=True, null=True, default=list)
 

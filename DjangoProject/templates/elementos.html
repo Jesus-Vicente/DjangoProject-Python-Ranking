@@ -3,55 +3,81 @@
 
 {% block body %}
 <div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-white" style="text-shadow: 2px 2px #062D76;">
-            ⚡ Centro de Valoración: Temporada 1 ⚡
-        </h2>
-        <span class="badge bg-warning text-dark p-2">Jugadores: {{ elementos|length }}</span>
+    <div class="row mb-5 align-items-center">
+        <div class="col-lg-6">
+            <h2 class="text-white mb-0" style="text-shadow: 2px 2px #062D76;">
+                ⚡ Centro de Valoración ⚡
+            </h2>
+            <p class="text-info mb-0">Temporada 1: El Despertar del Raimon</p>
+        </div>
+        <div class="col-lg-6 mt-3 mt-lg-0">
+            <form method="GET" action="{% url 'mostrar_elementos' %}" class="d-flex shadow-sm">
+                <input type="text" name="q" class="form-control border-info bg-dark text-white"
+                       placeholder="Busca un jugador..." value="{{ query|default:'' }}">
+                <button type="submit" class="btn btn-info fw-bold ms-2">
+                    <i class="bi bi-search"></i> BUSCAR
+                </button>
+                {% if query %}
+                <a href="{% url 'mostrar_elementos' %}" class="btn btn-outline-danger ms-1">Limpiar</a>
+                {% endif %}
+            </form>
+        </div>
     </div>
 
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for el in elementos %}
         <div class="col">
-            <div class="card bg-dark text-white border-warning h-100 card-hover shadow">
+            <div class="card bg-dark text-white border-secondary h-100 card-hover shadow">
+
                 <div class="position-relative">
                     <img src="{{ el.imageUrl }}" class="card-img-top" alt="{{ el.nombre }}"
-                         style="height: 180px; object-fit: cover; opacity: 0.9;">
-                    <span class="position-absolute top-0 end-0 m-2 badge bg-primary">ID: {{ el.code }}</span>
+                         style="height: 190px; object-fit: cover; opacity: 0.85;">
+
+                    <div class="position-absolute top-0 start-0 m-2">
+                        {% if el.afinidad == 'Fuego' %}
+                            <span class="badge bg-danger shadow-sm"><i class="bi bi-fire"></i> Fuego</span>
+                        {% elif el.afinidad == 'Bosque' %}
+                            <span class="badge bg-success shadow-sm"><i class="bi bi-tree-fill"></i> Bosque</span>
+                        {% elif el.afinidad == 'Aire' %}
+                            <span class="badge bg-info text-dark shadow-sm"><i class="bi bi-wind"></i> Aire</span>
+                        {% elif el.afinidad == 'Montaña' %}
+                            <span class="badge bg-warning text-dark shadow-sm"><i class="bi bi-geo-fill"></i> Montaña</span>
+                        {% else %}
+                            <span class="badge bg-secondary shadow-sm">Neutral</span>
+                        {% endif %}
+                    </div>
+
+                    <span class="position-absolute top-0 end-0 m-2 badge bg-dark opacity-75">ID: {{ el.code }}</span>
                     <div class="position-absolute bottom-0 start-0 m-2">
-                        <span class="badge rounded-pill bg-info text-dark px-3">{{ el.posicion }}</span>
+                        <span class="badge rounded-pill bg-primary px-3">{{ el.posicion }}</span>
                     </div>
                 </div>
 
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                     <h5 class="card-title text-warning fw-bold text-center">{{ el.nombre }}</h5>
+                    <hr class="border-secondary mt-1">
 
-                    <hr class="border-secondary">
-
-                    <form action="{% url 'guardar_review' %}" method="POST">
+                    <form action="{% url 'guardar_review' %}" method="POST" class="mt-auto">
                         {% csrf_token %}
                         <input type="hidden" name="elementoCode" value="{{ el.code }}">
 
                         <div class="mb-3">
                             <label class="form-label small d-flex justify-content-between">
-                                <span>Puntuación (1-5):</span>
-                                <span class="text-warning">
+                                <span>Nivel de Poder:</span>
+                                <span class="text-warning fw-bold">
                                     {% if el.nota_actual %} ⚡ {{ el.nota_actual }}/5 {% endif %}
                                 </span>
                             </label>
                             <input type="range" name="puntuacion" class="form-range custom-range"
                                    min="1" max="5" step="1" value="{{ el.nota_actual|default:3 }}">
-                            <div class="d-flex justify-content-between text-muted small px-1">
-                                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-                            </div>
                         </div>
 
                         <div class="mb-3">
                             <textarea name="comentario" class="form-control form-control-sm bg-black text-white border-secondary"
-                                      rows="2" placeholder="Análisis del jugador...">{{ el.comentario_actual|default:'' }}</textarea>
+                                      rows="2" placeholder="Análisis del jugador...">{{ el.comentario_actual }}</textarea>
                         </div>
 
-                        <button type="submit" class="btn btn-sm {% if el.nota_actual %}btn-outline-info{% else %}btn-warning{% endif %} w-100 fw-bold">
+                        <button type="submit" class="btn btn-sm {% if el.nota_actual %}btn-outline-info{% else %}btn-warning{% endif %} w-100 fw-bold shadow-sm">
                             {% if el.nota_actual %}Actualizar Análisis{% else %}Guardar Análisis{% endif %}
                         </button>
                     </form>
@@ -59,35 +85,36 @@
 
                 {% if el.nota_actual %}
                 <div class="card-footer bg-transparent border-info text-center py-1">
-                    <small class="text-info"><i class="bi bi-check-circle-fill"></i> Valoración registrada</small>
+                    <small class="text-info"><i class="bi bi-check-circle-fill"></i> Análisis completado</small>
                 </div>
                 {% endif %}
             </div>
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <p class="text-muted">No hay jugadores disponibles para puntuar.</p>
-            <a href="{% url 'data_load' %}" class="btn btn-outline-warning">Ir a Carga CSV</a>
+            <div class="p-5 border border-dashed border-secondary rounded">
+                <p class="text-muted fs-4">No se han encontrado jugadores con el nombre: <strong>{{ query }}</strong></p>
+                <a href="{% url 'mostrar_elementos' %}" class="btn btn-outline-info">Ver todos los jugadores</a>
+            </div>
         </div>
         {% endfor %}
     </div>
 </div>
 
 <style>
-    .card-hover { transition: all 0.3s ease; }
+    .card-hover { transition: transform 0.3s ease, border-color 0.3s ease; }
     .card-hover:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 255, 255, 0.2) !important;
         border-color: #0dcaf0 !important;
     }
-    .custom-range::-webkit-slider-runnable-track { background: #333; border-radius: 5px; }
-    .custom-range::-webkit-slider-thumb { background: #ffc107; }
-    /* Estilo para que el textarea no brille blanco al clickar */
+    .custom-range::-webkit-slider-runnable-track { background: #333; height: 6px; border-radius: 3px; }
+    .custom-range::-webkit-slider-thumb { background: #ffc107; box-shadow: 0 0 5px #ffc107; }
     .form-control:focus {
         background-color: #000;
         color: #fff;
         border-color: #ffc107;
-        box-shadow: none;
+        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
     }
+    .badge { font-weight: 700; text-transform: uppercase; }
 </style>
 {% endblock %}

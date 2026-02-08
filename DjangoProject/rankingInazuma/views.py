@@ -62,14 +62,13 @@ def go_admin_panel(request):
 
 @user_passes_test(es_admin)
 def data_load(request):
-    """Carga masiva con lógica de actualización (RF10)"""
+    """Carga masiva con lógica de actualización (RF10) + Afinidad"""
     if request.method == "POST":
         archivo_csv = request.FILES.get('csvFile')
         if not archivo_csv:
-            messages.error(request, 'Debes seleccionar un archivo CSV de la Temporada 1.')
+            messages.error(request, 'Debes seleccionar un archivo CSV.')
             return redirect('data_load')
 
-        # Leemos el archivo
         lineas = archivo_csv.read().decode('utf-8').splitlines()
         lector = csv.DictReader(lineas)
 
@@ -78,25 +77,28 @@ def data_load(request):
 
         for fila in lector:
             nombre_item = fila['Nombre']
-
-            # Buscamos si el personaje/equipo ya existe en la base de datos
-            # Usamos .filter().first() para que no de error si no encuentra nada
             existente = Elemento.objects.filter(nombre=nombre_item).first()
 
             if existente:
-                # 1. SI EXISTE: Actualizamos sus datos (por si ha cambiado la imagen o la posición)
+                # Actualización
                 existente.posicion = fila.get('Posicion', 'Sin definir')
+                existente.afinidad = fila.get('Afinidad', 'Neutral')  # Nuevo campo
                 existente.imageUrl = fila['Imagen']
                 existente.save()
                 contador_actualizados += 1
             else:
-                # 2. NO EXISTE: Creamos un nuevo registro
+                # Creación
                 nuevo = Elemento()
                 nuevo.nombre = nombre_item
                 nuevo.posicion = fila.get('Posicion', 'Sin definir')
+                nuevo.afinidad = fila.get('Afinidad', 'Neutral')  # Nuevo campo
                 nuevo.imageUrl = fila['Imagen']
 
-                # Generamos el código autoincremental para MongoDB
+                # Campos obligatorios por modelo (puedes ajustarlos según tu CSV)
+                nuevo.categoriaCode = 1
+                nuevo.temporadaCode = 1
+                nuevo.descripcion = fila.get('Descripcion', 'Jugador de la Temporada 1')
+
                 ultimo = Elemento.objects.order_by('code').last()
                 nuevo.code = (ultimo.code + 1) if ultimo else 1
 
@@ -104,7 +106,7 @@ def data_load(request):
                 contador_nuevos += 1
 
         messages.success(request,
-                         f"¡Proceso completado! Fichados: {contador_nuevos}. Actualizados: {contador_actualizados}.")
+                         f"¡Proceso completado! Nuevos: {contador_nuevos}. Actualizados: {contador_actualizados}.")
         return redirect('go_admin_panel')
 
     return render(request, 'data_load.html')
@@ -112,21 +114,34 @@ def data_load(request):
 
 @user_passes_test(es_admin)
 def categories(request):
-    categorias_lista = Categoria.objects.all()
+    categorias_lista = Categoria.objects.using('mongodb').all() # Especifico alias si usas varios DBs
     elementos_disponibles = Elemento.objects.all()
 
     if request.method == "POST":
         nueva_categoria = Categoria()
-        # CORRECCIÓN: 'name' debe coincidir con el name del input en el HTML
-        nueva_categoria.name = request.POST.get('name')
-        nueva_categoria.logo = request.POST.get('logo')
-        nueva_categoria.description = request.POST.get('description')
 
+        # CAMBIO AQUÍ: Debe coincidir con el 'name' de tu input HTML
+        # Según tu log de POST es 'nombre', no 'name'
+        nueva_categoria.nombre = request.POST.get('nombre')
+
+        # Lógica del Logo
+        logo_url = request.POST.get('logo')
+        if not logo_url or logo_url.strip() == "":
+            logo_url = "/static/images/default-categoria-icono.png"
+        nueva_categoria.logo = logo_url
+
+        nueva_categoria.descripcion = request.POST.get('description')
+
+        # Usar .using('mongodb') si tienes configurado el Router
         ultima_categoria = Categoria.objects.order_by('code').last()
         nueva_categoria.code = (ultima_categoria.code + 1) if ultima_categoria else 1
 
+        # Manejo de la lista de elementos
         seleccion_json = request.POST.get('items_seleccionados')
-        nueva_categoria.listaElementos = [int(x) for x in json.loads(seleccion_json)]
+        if seleccion_json:
+            nueva_categoria.listaElementos = [int(x) for x in json.loads(seleccion_json)]
+        else:
+            nueva_categoria.listaElementos = []
 
         nueva_categoria.save()
         messages.success(request, "Nueva categoría Inazuma creada correctamente.")
@@ -196,34 +211,47 @@ def save_top(request):
     return redirect('go_home')
 
 
+@login_required
 def guardar_review(request):
+    """Procesa el formulario de valoración de elementos"""
     if request.method == "POST":
-        elemento_code = int(request.POST.get('elementoCode'))
-        puntuacion = int(request.POST.get('puntuacion'))
-        comentario = request.POST.get('comentario')
-        nombre_usuario = request.user.nombre
+        try:
+            elemento_code = int(request.POST.get('elementoCode'))
+            puntuacion = int(request.POST.get('puntuacion'))
+            comentario = request.POST.get('comentario')
+            nombre_usuario = request.user.nombre
 
+            # update_or_create: busca por usuario y elemento, si existe actualiza, si no crea.
+            review, created = Reviews.objects.update_or_create(
+                usuario=nombre_usuario,
+                elementoCode=elemento_code,
+                defaults={
+                    'puntuacion': puntuacion,
+                    'comentario': comentario,
+                    'fecha': timezone.now()
+                }
+            )
 
-        review, created = Reviews.objects.update_or_create(
-            usuario=nombre_usuario,
-            elementoCode=elemento_code,
-            defaults={
-                'puntuacion': puntuacion,
-                'comentario': comentario,
-                'fecha': timezone.now()
-            }
-        )
+            if created:
+                messages.success(request, "¡Valoración guardada!")
+            else:
+                messages.info(request, "Valoración actualizada.")
 
-        if created:
-            messages.success(request, "¡Fichaje valorado con éxito!")
-        else:
-            messages.info(request, "Valoración actualizada correctamente.")
+        except (ValueError, TypeError):
+            messages.error(request, "Error en los datos enviados.")
 
     return redirect('mostrar_elementos')
 
 
 def mostrar_elementos(request):
-    elementos = Elemento.objects.all()
+    """Listado con buscador y visualización de afinidad"""
+    query = request.GET.get('q')
+
+    if query:
+        # Filtramos por nombre que contenga el texto buscado
+        elementos = Elemento.objects.filter(nombre__icontains=query)
+    else:
+        elementos = Elemento.objects.all()
 
     puntuaciones_dict = {}
     if request.user.is_authenticated:
@@ -241,5 +269,6 @@ def mostrar_elementos(request):
             elemento.comentario_actual = review_data['comentario']
         else:
             elemento.nota_actual = None
+            elemento.comentario_actual = ""
 
-    return render(request, 'elementos.html', {'elementos': elementos})
+    return render(request, 'elementos.html', {'elementos': elementos, 'query': query})
