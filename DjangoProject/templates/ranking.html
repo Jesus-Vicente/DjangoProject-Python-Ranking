@@ -1,124 +1,381 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block body %}
-<div class="container py-4 animate__animated animate__fadeIn">
-    <div class="text-center mb-5">
-        <h2 class="text-warning fw-bold" style="text-shadow: 2px 2px #000;">
-            ⚡ CONFIGURANDO TOP: {{ categoria.nombre }} ⚡
-        </h2>
-        <p class="text-info text-uppercase small tracking-widest">Arrastra a los elegidos a sus puestos de honor</p>
+<div class="ranking-master-wrapper animate__animated animate__fadeIn">
+
+    <div class="header-main">
+        <h2 class="glow-text">RANKING {{ categoria.nombre }}</h2>
+        <div class="status-bar">
+            {% if edit_mode %}
+                <div class="edit-mode-badge">
+                    <span class="pulse-dot-red"></span>
+                    <span class="edit-text-glitch">MODO EDICIÓN ACTIVO</span>
+                </div>
+            {% else %}
+                <span class="static-dot"></span> SELECCIONA TU TOP 5 ELITE
+            {% endif %}
+        </div>
     </div>
 
-    <div class="row g-3 justify-content-center mb-5" id="top-slots">
+    <div class="podium-container" id="top-slots">
         {% for i in "12345" %}
-            <div class="col-6 col-sm-4 col-md-2">
-                <div class="border rounded p-2 bg-dark text-center slot border-info shadow-sm"
-                     data-position="{{ forloop.counter }}" style="min-height: 180px; transition: 0.3s;">
-                    <h5 class="mb-2 text-info fw-bold">#{{ forloop.counter }}</h5>
-                    <div class="slot-drop-area d-flex justify-content-center align-items-center flex-wrap"
-                         style="min-height: 120px; border: 2px dashed rgba(13, 202, 240, 0.3); border-radius: 10px;">
-                    </div>
+        <div class="podium-box" data-rank="{{ forloop.counter }}">
+            <div class="slot-header">
+                <span class="number">{{ forloop.counter }}</span>
+            </div>
+            <div class="drop-zone-premium" data-position="{{ forloop.counter }}">
+                <div class="inner-placeholder">
+                    <i class="bi bi-plus-lg"></i>
                 </div>
             </div>
+        </div>
         {% endfor %}
     </div>
 
-    <hr class="border-secondary opacity-25">
+    <div class="hub-container">
+        <div class="hub-toolbar">
+            <div class="search-group">
+                <i class="bi bi-search"></i>
+                <input type="text" id="playerSearch" placeholder="BUSCAR JUGADOR POR NOMBRE...">
+            </div>
+            <button type="button" id="resetPodiumBtn" class="btn-reset-premium">
+                <i class="bi bi-arrow-counterclockwise"></i> LIMPIAR
+            </button>
+        </div>
 
-    <h4 class="text-center mb-4 text-white-50"><i class="bi bi-people-fill"></i> JUGADORES DISPONIBLES</h4>
-    <div class="row g-3 px-3 justify-content-center" id="all-items" style="min-height: 150px; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px;">
-        {% for item in elementos %}
-            <div class="col-4 col-md-2 col-lg-1">
-                <div class="card p-2 text-center bg-secondary text-white shadow-sm hvr-grow player-card"
-                     data-id="{{ item.code }}" data-nombre="{{ item.nombre }}" style="cursor: grab; border: none;">
-                    <img src="{{ item.imageUrl }}" class="mx-auto mb-1" alt="{{ item.nombre }}"
-                         style="height:50px; width:50px; object-fit:contain; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));">
-                    <h6 class="m-0 fw-bold" style="font-size: 0.7rem; overflow: hidden; white-space: nowrap;">{{ item.nombre }}</h6>
+        <div class="hub-filter-bar">
+            <button class="filter-chip active" data-filter="all">TODOS <span id="count-all">0</span></button>
+            <button class="filter-chip" data-filter="Portero">PT <span id="count-Portero">0</span></button>
+            <button class="filter-chip" data-filter="Defensa">DF <span id="count-Defensa">0</span></button>
+            <button class="filter-chip" data-filter="Centrocampista">MC <span id="count-Centrocampista">0</span></button>
+            <button class="filter-chip" data-filter="Delantero">DL <span id="count-Delantero">0</span></button>
+        </div>
+
+        <div class="players-grid-premium custom-scroll" id="all-items">
+            {% for item in elementos %}
+            <div class="player-card-premium"
+                 data-id="{{ item.code }}"
+                 data-nombre="{{ item.nombre|lower }}"
+                 data-posicion="{{ item.posicion|strip }}">
+
+                <div class="card-tag">
+                    {% with pos=item.posicion|strip %}
+                        {% if pos == "Delantero" %}DL
+                        {% elif pos == "Centrocampista" %}MC
+                        {% elif pos == "Defensa" %}DF
+                        {% elif pos == "Portero" %}PT
+                        {% else %}{{ pos|slice:":2"|upper }}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+                <div class="image-box">
+                    <img src="{{ item.imageUrl }}" alt="{{ item.nombre }}" onerror="this.src='https://placehold.co/150x200?text=PLAYER'">
+                </div>
+
+                <div class="info-box">
+                    <div class="p-name">{{ item.nombre }}</div>
                 </div>
             </div>
-        {% endfor %}
+            {% endfor %}
+        </div>
     </div>
 
-    <form id="saveTopForm" method="POST" action="{% url 'save_top' %}">
+    <form id="saveTopForm" method="POST" action="{% url 'save_top' %}" class="text-center mt-5">
         {% csrf_token %}
         <input type="hidden" name="categoriaCode" value="{{ categoria.code }}">
         <input type="hidden" name="rankinLista" id="orderInput">
+        <input type="hidden" name="rankingId" value="{{ ranking_editando.id|default:'' }}">
 
-        <div class="text-center mt-5">
-            <button type="button" class="btn btn-warning btn-lg fw-bold px-5 shadow-glow-yellow" id="saveTopBtn">
-                <i class="bi bi-cloud-upload-fill me-2"></i> CONFIRMAR ESTRATEGIA
-            </button>
-            <div class="mt-2">
-                <a href="{% url 'show_categories' %}" class="text-muted small text-decoration-none">
-                    <i class="bi bi-arrow-left"></i> Cambiar categoría
-                </a>
-            </div>
-        </div>
+        <button type="button" class="btn-action-glow" id="saveTopBtn">
+            {% if edit_mode %} ACTUALIZAR RANKING {% else %} CONFIRMAR TOP 5 {% endif %}
+        </button>
     </form>
 </div>
 
-
-
 <style>
-    .slot-drop-area .player-card { width: 100% !important; transform: scale(0.9); }
-    .slot.active-slot { border-color: #ffc107 !important; background: rgba(255, 193, 7, 0.1) !important; }
-    .shadow-glow-yellow { box-shadow: 0 0 15px rgba(255, 193, 7, 0.4); }
-    .hvr-grow { transition: transform 0.2s; }
-    .hvr-grow:hover { transform: scale(1.1); z-index: 10; }
+    :root {
+        --bg-dark: #060709;
+        --panel-bg: #0f1115;
+        --accent: #00f2ff;
+        --inazuma-yellow: #fff200;
+        --gold: #ffcc00;
+        --silver: #e0e0e0;
+        --bronze: #ff8c42;
+        --steel: #606977;
+        --border-glass: rgba(255, 255, 255, 0.1);
+        --danger-red: #ff4757;
+    }
+
+    /* --- ESTILOS EXCLUSIVOS MODO EDICIÓN --- */
+    .edit-mode-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255, 71, 87, 0.15);
+        padding: 8px 20px;
+        border-radius: 50px;
+        border: 1px solid rgba(255, 71, 87, 0.4);
+        box-shadow: 0 0 15px rgba(255, 71, 87, 0.1);
+    }
+
+    .pulse-dot-red {
+        width: 10px;
+        height: 10px;
+        background-color: var(--danger-red);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--danger-red);
+        animation: pulse-red-alert 1.5s infinite;
+    }
+
+    .edit-text-glitch {
+        color: var(--danger-red);
+        font-weight: 900;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        text-shadow: 2px 0 10px rgba(255, 71, 87, 0.3);
+    }
+
+    @keyframes pulse-red-alert {
+        0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+        100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+    }
+    /* --------------------------------------- */
+
+    .ranking-master-wrapper {
+        background: var(--bg-dark); min-height: 100vh; padding: 40px 20px;
+        color: white; font-family: 'Inter', sans-serif;
+    }
+
+    .header-main {
+        text-align: center;
+        margin-bottom: 80px; /* Separación aumentada del bloque completo */
+        position: relative;
+    }
+
+    .header-main::before {
+        content: "STRIKER_PROTOCOL: INAZUMA";
+        display: block;
+        font-family: monospace;
+        font-size: 0.65rem;
+        color: var(--inazuma-yellow);
+        letter-spacing: 5px;
+        margin-bottom: 15px;
+        opacity: 0.9;
+        text-shadow: 0 0 8px rgba(255, 242, 0, 0.5);
+    }
+
+    .glow-text {
+        font-size: 3.5rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 18px;
+        font-style: italic;
+        background: linear-gradient(180deg, #fff 25%, var(--inazuma-yellow) 55%, #ff9800 90%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 35px; /* Separación del título con la barra inferior */
+        position: relative;
+        display: block; /* Cambiado a block para aplicar margen correctamente */
+        line-height: 1.2;
+        text-indent: 18px;
+        filter: drop-shadow(0 0 12px rgba(255, 242, 0, 0.3));
+    }
+
+    .status-bar {
+        margin-top: 15px; /* Espacio extra sobre la barra de selección/edición */
+    }
+
+    .glow-text::before,
+    .glow-text::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 60px;
+        height: 2px;
+        background: var(--inazuma-yellow);
+        box-shadow: 0 0 10px var(--inazuma-yellow);
+    }
+
+    .glow-text::before { right: 100%; margin-right: 20px; }
+    .glow-text::after { left: 100%; margin-left: 20px; }
+
+    .podium-container { display: flex; justify-content: center; gap: 20px; margin-bottom: 60px; }
+    .podium-box { width: 155px; }
+
+    .slot-header {
+        height: 32px; display: flex; align-items: center; justify-content: center;
+        font-weight: 900; color: #000; width: 75%; margin: 0 auto -2px;
+        clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
+        position: relative; z-index: 10; font-size: 1.1rem;
+    }
+
+    .podium-box[data-rank="1"] .slot-header { background: var(--gold); box-shadow: 0 -5px 15px rgba(255, 204, 0, 0.4); }
+    .podium-box[data-rank="2"] .slot-header { background: var(--silver); }
+    .podium-box[data-rank="3"] .slot-header { background: var(--bronze); }
+    .podium-box[data-rank="4"] .slot-header,
+    .podium-box[data-rank="5"] .slot-header { background: var(--steel); color: #fff; }
+
+    .drop-zone-premium {
+        height: 210px; background: #000; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        position: relative; transition: all 0.3s ease; overflow: hidden;
+    }
+
+    @keyframes neon-flicker {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.9; }
+        98% { opacity: 1; }
+    }
+
+    .podium-box[data-rank="1"] .drop-zone-premium { border: 4px solid var(--gold); box-shadow: 0 0 15px var(--gold), 0 0 30px rgba(255, 204, 0, 0.6), inset 0 0 15px rgba(255, 204, 0, 0.3); animation: neon-flicker 3s infinite; }
+    .podium-box[data-rank="2"] .drop-zone-premium { border: 4px solid var(--silver); box-shadow: 0 0 15px var(--silver), 0 0 30px rgba(224, 224, 224, 0.4); }
+    .podium-box[data-rank="3"] .drop-zone-premium { border: 4px solid var(--bronze); box-shadow: 0 0 15px var(--bronze), 0 0 30px rgba(255, 140, 66, 0.4); }
+    .podium-box[data-rank="4"] .drop-zone-premium,
+    .podium-box[data-rank="5"] .drop-zone-premium { border: 4px solid var(--steel); box-shadow: 0 0 10px var(--steel); }
+
+    .drop-zone-premium .player-card-premium { background: transparent !important; border: none !important; width: 100% !important; height: 100% !important; }
+    .drop-zone-premium .player-card-premium .image-box { height: 100% !important; mask-image: linear-gradient(to bottom, black 70%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%); }
+    .drop-zone-premium .player-card-premium .info-box { position: absolute; bottom: 0; width: 100%; background: linear-gradient(transparent, rgba(0,0,0,0.95) 80%); padding: 25px 5px 10px 5px; }
+    .drop-zone-premium .player-card-premium .p-name { color: var(--accent); font-size: 0.9rem; font-weight: 900; text-shadow: 0 0 5px var(--accent), 0 0 15px rgba(0, 242, 255, 0.6); }
+    .drop-zone-premium .player-card-premium .card-tag { display: none; }
+    .drop-zone-premium:has(.player-card-premium) .inner-placeholder { display: none; }
+    .inner-placeholder { font-size: 2.5rem; color: #1a1d23; }
+
+    .hub-container { max-width: 1000px; margin: 0 auto; background: var(--panel-bg); border: 1px solid var(--border-glass); border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .hub-toolbar { display: flex; padding: 20px; gap: 15px; background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--border-glass); }
+    .search-group { flex: 1; position: relative; }
+    .search-group input { width: 100%; background: #000; border: 1px solid #333; padding: 12px 45px; color: #fff; border-radius: 6px; font-weight: 500; }
+    .search-group i { position: absolute; left: 18px; top: 14px; color: var(--accent); }
+    .btn-reset-premium { background: rgba(255, 71, 87, 0.1); border: 1px solid #ff4757; color: #ff4757; padding: 0 20px; border-radius: 6px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+    .btn-reset-premium:hover { background: #ff4757; color: #fff; }
+
+    .hub-filter-bar { padding: 12px 20px; display: flex; gap: 20px; background: #08090b; border-bottom: 1px solid var(--border-glass); }
+    .filter-chip { background: transparent; border: none; color: #666; font-weight: 800; font-size: 0.8rem; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+    .filter-chip.active { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+
+    .players-grid-premium { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; padding: 25px; max-height: 500px; overflow-y: auto; }
+    .player-card-premium { background: #1a1d23; border-radius: 8px; position: relative; cursor: grab; border: 1px solid #2a2e35; transition: 0.3s; }
+    .player-card-premium:hover { transform: translateY(-5px); border-color: var(--accent); }
+    .card-tag { position: absolute; top: 8px; left: 8px; background: var(--accent); color: #000; font-size: 0.7rem; font-weight: 900; padding: 3px 8px; border-radius: 4px; z-index: 5; }
+    .image-box { height: 160px; background: #000; overflow: hidden; border-radius: 8px 8px 0 0; }
+    .image-box img { width: 100%; height: 100%; object-fit: cover; }
+    .info-box { padding: 10px; text-align: center; }
+    .p-name { font-size: 0.8rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; color: #fff; }
+
+    .btn-action-glow {
+        margin: 50px auto; display: block; background: var(--inazuma-yellow); color: #000;
+        border: none; padding: 22px 70px; font-weight: 900; text-transform: uppercase;
+        letter-spacing: 2px; clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%); cursor: pointer; transition: 0.4s;
+    }
+    .btn-action-glow:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 242, 0, 0.6); background: #fff; }
+
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    .static-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: inline-block; margin-right: 8px; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const allItems = document.getElementById('all-items');
+        const bench = document.getElementById('all-items');
+        const searchInput = document.getElementById('playerSearch');
+        const filterBtns = document.querySelectorAll('.filter-chip');
 
-        // Configuración de la reserva
-        Sortable.create(allItems, {
-            group: 'shared',
-            animation: 150,
-            ghostClass: 'bg-info'
-        });
+        const sortOptions = {
+            group: 'players',
+            animation: 250,
+            onAdd: () => { updateCounts(); filterItems(); }
+        };
 
-        // Configuración de cada Slot (Top 1-5)
-        document.querySelectorAll('.slot-drop-area').forEach((slotArea) => {
-            Sortable.create(slotArea, {
-                group: 'shared',
-                animation: 150,
+        Sortable.create(bench, sortOptions);
+
+        document.querySelectorAll('.drop-zone-premium').forEach(slot => {
+            Sortable.create(slot, {
+                ...sortOptions,
                 onAdd: (evt) => {
-                    // Si ya hay un jugador en el slot, devolvemos el antiguo a la reserva
-                    if (slotArea.children.length > 1) {
-                        const existingItem = slotArea.children[0] === evt.item ? slotArea.children[1] : slotArea.children[0];
-                        allItems.appendChild(existingItem);
+                    const items = slot.querySelectorAll('.player-card-premium');
+                    if (items.length > 1) {
+                        const oldItem = items[0] === evt.item ? items[1] : items[0];
+                        bench.appendChild(oldItem);
                     }
+                    updateCounts();
+                    filterItems();
                 }
             });
+        });
+
+        {% if edit_mode and ranking_editando %}
+        setTimeout(() => {
+            try {
+                const datos = {{ ranking_editando.rankinLista|safe }};
+                datos.forEach(item => {
+                    const card = bench.querySelector(`.player-card-premium[data-id="${item.elementoCode}"]`);
+                    const slot = document.querySelector(`.drop-zone-premium[data-position="${item.posicion}"]`);
+                    if (card && slot) { slot.appendChild(card); }
+                });
+                updateCounts();
+                filterItems();
+            } catch(e) {}
+        }, 300);
+        {% endif %}
+
+        function updateCounts() {
+            const cards = bench.querySelectorAll('.player-card-premium');
+            const counts = { all: 0, Portero: 0, Defensa: 0, Centrocampista: 0, Delantero: 0 };
+            cards.forEach(c => {
+                counts.all++;
+                const p = c.dataset.posicion;
+                if (counts.hasOwnProperty(p)) counts[p]++;
+            });
+            Object.keys(counts).forEach(key => {
+                const el = document.getElementById(`count-${key}`);
+                if (el) el.innerText = counts[key];
+            });
+        }
+
+        function filterItems() {
+            const query = searchInput.value.toLowerCase().trim();
+            const activeFilter = document.querySelector('.filter-chip.active').dataset.filter;
+            bench.querySelectorAll('.player-card-premium').forEach(card => {
+                const matchesSearch = card.dataset.nombre.includes(query);
+                const matchesFilter = (activeFilter === 'all' || card.dataset.posicion === activeFilter);
+                card.style.display = (matchesSearch && matchesFilter) ? "block" : "none";
+            });
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                filterItems();
+            });
+        });
+
+        searchInput.addEventListener('input', filterItems);
+
+        document.getElementById('resetPodiumBtn').addEventListener('click', () => {
+            document.querySelectorAll('.drop-zone-premium .player-card-premium').forEach(card => bench.appendChild(card));
+            updateCounts();
+            filterItems();
         });
 
         document.getElementById('saveTopBtn').addEventListener('click', () => {
-            const rankingData = [];
-
-            document.querySelectorAll('.slot').forEach((slot) => {
-                const pos = slot.dataset.position;
-                const card = slot.querySelector('.player-card');
-                if (card) {
-                    // Guardamos como objeto JSON para tu ArrayField
-                    rankingData.push({
-                        "posicion": parseInt(pos),
-                        "elementoCode": parseInt(card.dataset.id),
-                        "nombre": card.dataset.nombre
-                    });
-                }
+            const res = [];
+            document.querySelectorAll('.drop-zone-premium').forEach(slot => {
+                const card = slot.querySelector('.player-card-premium');
+                if(card) res.push({ "posicion": slot.dataset.position, "elementoCode": card.dataset.id });
             });
-
-            if(rankingData.length === 0){
-                alert("¡Entrenador! Necesitas al menos un jugador en el Top.");
-                return;
-            }
-
-            document.getElementById('orderInput').value = JSON.stringify(rankingData);
+            if(res.length === 0) { alert("El podio está vacío"); return; }
+            document.getElementById('orderInput').value = JSON.stringify(res);
             document.getElementById('saveTopForm').submit();
         });
+
+        updateCounts();
     });
 </script>
 {% endblock %}

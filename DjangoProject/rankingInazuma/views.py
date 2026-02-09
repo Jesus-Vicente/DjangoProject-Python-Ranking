@@ -1,18 +1,20 @@
 import csv
 import json
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
 
-# Tus modelos específicos
 from .forms import RegisterForm, LoginForm
 from .models import Elemento, Categoria, Ranking, Reviews
 
 
+# --- VISTAS DE ACCESO ---
+
 def go_home(request):
     return render(request, 'inicio.html')
+
 
 def do_login(request):
     if request.method == 'POST':
@@ -46,10 +48,13 @@ def do_register(request):
         form = RegisterForm()
         return render(request, 'register.html', {"form": form})
 
+
 def logout_user(request):
     logout(request)
     return redirect('go_home')
 
+
+# --- PANEL ADMIN Y CARGA DE DATOS ---
 
 def es_admin(user):
     return user.is_authenticated and user.rol == 'admin'
@@ -80,77 +85,56 @@ def data_load(request):
             existente = Elemento.objects.filter(nombre=nombre_item).first()
 
             if existente:
-                # Actualización
                 existente.posicion = fila.get('Posicion', 'Sin definir')
-                existente.afinidad = fila.get('Afinidad', 'Neutral')  # Nuevo campo
+                existente.afinidad = fila.get('Afinidad', 'Neutral')
                 existente.imageUrl = fila['Imagen']
                 existente.save()
                 contador_actualizados += 1
             else:
-                # Creación
                 nuevo = Elemento()
                 nuevo.nombre = nombre_item
                 nuevo.posicion = fila.get('Posicion', 'Sin definir')
-                nuevo.afinidad = fila.get('Afinidad', 'Neutral')  # Nuevo campo
+                nuevo.afinidad = fila.get('Afinidad', 'Neutral')
                 nuevo.imageUrl = fila['Imagen']
-
-                # Campos obligatorios por modelo (puedes ajustarlos según tu CSV)
-                nuevo.categoriaCode = 1
+                nuevo.categoriaCode = int(fila.get('CategoriaCode', 1))  # Importante para que aparezcan en ranking
                 nuevo.temporadaCode = 1
                 nuevo.descripcion = fila.get('Descripcion', 'Jugador de la Temporada 1')
 
                 ultimo = Elemento.objects.order_by('code').last()
                 nuevo.code = (ultimo.code + 1) if ultimo else 1
-
                 nuevo.save()
                 contador_nuevos += 1
 
         messages.success(request,
-                         f"¡Proceso completado! Nuevos: {contador_nuevos}. Actualizados: {contador_actualizados}.")
+                         f"Proceso completado! Nuevos: {contador_nuevos}. Actualizados: {contador_actualizados}.")
         return redirect('go_admin_panel')
-
     return render(request, 'data_load.html')
 
 
 @user_passes_test(es_admin)
 def categories(request):
-    categorias_lista = Categoria.objects.using('mongodb').all() # Especifico alias si usas varios DBs
+    categorias_lista = Categoria.objects.all()
     elementos_disponibles = Elemento.objects.all()
 
     if request.method == "POST":
         nueva_categoria = Categoria()
-
-        # CAMBIO AQUÍ: Debe coincidir con el 'name' de tu input HTML
-        # Según tu log de POST es 'nombre', no 'name'
         nueva_categoria.nombre = request.POST.get('nombre')
 
-        # Lógica del Logo
         logo_url = request.POST.get('logo')
-        if not logo_url or logo_url.strip() == "":
-            logo_url = "/static/images/default-categoria-icono.png"
-        nueva_categoria.logo = logo_url
-
+        nueva_categoria.logo = logo_url if logo_url else "/static/images/default.png"
         nueva_categoria.descripcion = request.POST.get('description')
 
-        # Usar .using('mongodb') si tienes configurado el Router
         ultima_categoria = Categoria.objects.order_by('code').last()
         nueva_categoria.code = (ultima_categoria.code + 1) if ultima_categoria else 1
 
-        # Manejo de la lista de elementos
         seleccion_json = request.POST.get('items_seleccionados')
-        if seleccion_json:
-            nueva_categoria.listaElementos = [int(x) for x in json.loads(seleccion_json)]
-        else:
-            nueva_categoria.listaElementos = []
+        nueva_categoria.listaElementos = [int(x) for x in json.loads(seleccion_json)] if seleccion_json else []
 
         nueva_categoria.save()
-        messages.success(request, "Nueva categoría Inazuma creada correctamente.")
+        messages.success(request, "Nueva categoría creada.")
         return redirect('categories')
 
-    return render(request, 'categorias.html', {
-        'categorias': categorias_lista,
-        'elementos': elementos_disponibles
-    })
+    return render(request, 'categorias.html', {'categorias': categorias_lista, 'elementos': elementos_disponibles})
 
 
 @user_passes_test(es_admin)
@@ -160,70 +144,138 @@ def delete_category(request, code):
     return redirect('categories')
 
 
+# --- RANKINGS Y EXPLORACIÓN ---
 
 def show_categories(request):
     categorias = Categoria.objects.all()
     return render(request, 'ranking_categorias.html', {'categorias': categorias})
 
+
 def go_rankings(request, id):
     try:
-        categoria = Categoria.objects.get(code=id)
-        items_para_rankear = Elemento.objects.filter(code__in=categoria.listaElementos)
+        categoria_obj = Categoria.objects.get(code=id)
+        # Intentamos filtrar de dos formas para asegurar
+        elementos_para_rankear = Elemento.objects.filter(categoriaCode=int(id))
+
+        if not elementos_para_rankear.exists():
+            # Si lo anterior falla, intentamos por la lista de IDs guardada en la categoría
+            elementos_para_rankear = Elemento.objects.filter(code__in=categoria_obj.listaElementos)
+
+        # DEBUG: Mira tu consola de Python al cargar la página
+        print(f"DEBUG: Categoria {id} - Elementos encontrados: {elementos_para_rankear.count()}")
+
     except Categoria.DoesNotExist:
-        messages.error(request, "No se encuentra esa sección.")
+        messages.error(request, "Categoría no encontrada.")
         return redirect('show_categories')
 
     return render(request, 'ranking.html', {
-        'items': items_para_rankear,
-        'categoria_code': categoria.code,
-        'titulo': categoria.nombre
+        'elementos': elementos_para_rankear,
+        'categoria': categoria_obj,
+        'ids_en_top': [],
+        'edit_mode': False
     })
-
-
-@login_required
-def rankings_usuario(request):
-    # Usamos 'usuario' y 'fecha_creacion' que son los campos de tu modelo
-    mis_tops = Ranking.objects.filter(usuario=request.user.nombre).order_by('-fecha_creacion')
-    return render(request, 'rankings_usuario.html', {'rankings': mis_tops})
 
 @login_required
 def save_top(request):
     if request.method == 'POST':
-        order_json = request.POST.get('order')
-        categoria_code = request.POST.get('categoria_code')
+        rankin_lista_json = request.POST.get('rankinLista')
+        categoria_code = request.POST.get('categoriaCode')
+        ranking_id = request.POST.get('rankingId')
 
         try:
-            ids_ordenados = [int(i['id']) for i in json.loads(order_json)]
+            lista_original = json.loads(rankin_lista_json)
+            lista_enriquecida = []
 
-            ranking = Ranking()
+            for item in lista_original:
+                jugador = Elemento.objects.filter(code=item['elementoCode']).first()
+                if jugador:
+                    # Guardamos la posición explícitamente como string para el selector de JS
+                    lista_enriquecida.append({
+                        "posicion": str(item['posicion']),
+                        "pos": jugador.posicion,
+                        "nombre": jugador.nombre,
+                        "img": jugador.imageUrl,
+                        "elementoCode": item['elementoCode']
+                    })
 
-            ranking.fecha_creacion = timezone.now()
-            ranking.usuario = request.user.nombre
-            ranking.categoriaCode = int(categoria_code)
-            ranking.rankinLista = ids_ordenados
-            ranking.save()
+            if ranking_id and ranking_id != "":
+                Ranking.objects.filter(id=ranking_id, usuario=request.user.nombre).update(
+                    rankinLista=lista_enriquecida,
+                    fecha_creacion=timezone.now()
+                )
+                messages.success(request, "Estrategia actualizada.")
+            else:
+                nuevo_ranking = Ranking(
+                    usuario=request.user.nombre,
+                    categoriaCode=int(categoria_code),
+                    rankinLista=lista_enriquecida,
+                    fecha_creacion=timezone.now()
+                )
+                nuevo_ranking.save()
+                messages.success(request, "Ranking guardado.")
 
-            messages.success(request, "¡Tu Ranking ha sido guardado con éxito!")
         except Exception as e:
-            print(f"Error: {e}") # Para debug en consola
-            messages.error(request, "Error al guardar el ranking.")
+            messages.error(request, f"Error: {e}")
 
-    return redirect('go_home')
+    return redirect('rankings_usuario')
+
+@login_required
+def ranking_usuario(request):
+    mis_tops = Ranking.objects.filter(usuario=request.user.nombre).order_by('-fecha_creacion')
+    categorias = {c.code: c.nombre for c in Categoria.objects.all()}
+    for r in mis_tops:
+        r.nombre_categoria = categorias.get(r.categoriaCode, "Desconocida")
+    return render(request, 'rankings_usuario.html', {'rankings': mis_tops})
 
 
 @login_required
+def editar_ranking(request, ranking_id):
+    """Carga un ranking existente para editarlo"""
+    ranking_existente = get_object_or_404(Ranking, id=ranking_id, usuario=request.user.nombre)
+    categoria_obj = get_object_or_404(Categoria, code=ranking_existente.categoriaCode)
+
+    # Misma lógica de búsqueda de elementos que en go_rankings
+    elementos_para_rankear = Elemento.objects.filter(categoriaCode=ranking_existente.categoriaCode)
+    if not elementos_para_rankear.exists():
+        elementos_para_rankear = Elemento.objects.filter(code__in=categoria_obj.listaElementos)
+
+    # Convertimos los IDs a strings para que el template los compare correctamente
+    ids_en_top = [str(item['elementoCode']) for item in ranking_existente.rankinLista]
+
+    return render(request, 'ranking.html', {
+        'elementos': elementos_para_rankear,
+        'categoria': categoria_obj,
+        'ranking_editando': ranking_existente,
+        'ids_en_top': ids_en_top,
+        'edit_mode': True
+    })
+
+
+@login_required
+def eliminar_mi_ranking(request, ranking_id):
+    # Usar .nombre porque es el campo que defines en tu modelo de Usuario/Ranking
+    ranking_a_eliminar = Ranking.objects.filter(id=ranking_id, usuario=request.user.nombre)
+
+    if ranking_a_eliminar.exists():
+        ranking_a_eliminar.delete()
+        messages.warning(request, "Alineación eliminada.")
+    else:
+        messages.error(request, "No se pudo eliminar el ranking.")
+
+    return redirect('rankings_usuario')
+
+# --- REVIEWS Y ELEMENTOS ---
+
+@login_required
 def guardar_review(request):
-    """Procesa el formulario de valoración de elementos"""
     if request.method == "POST":
         try:
             elemento_code = int(request.POST.get('elementoCode'))
-            puntuacion = int(request.POST.get('puntuacion'))
+            puntuacion = int(request.POST.get('puntuacion')) # Ahora viene de las estrellas
             comentario = request.POST.get('comentario')
-            nombre_usuario = request.user.nombre
 
-            # update_or_create: busca por usuario y elemento, si existe actualiza, si no crea.
-            review, created = Reviews.objects.update_or_create(
-                usuario=nombre_usuario,
+            Reviews.objects.update_or_create(
+                usuario=request.user.nombre,
                 elementoCode=elemento_code,
                 defaults={
                     'puntuacion': puntuacion,
@@ -231,44 +283,24 @@ def guardar_review(request):
                     'fecha': timezone.now()
                 }
             )
-
-            if created:
-                messages.success(request, "¡Valoración guardada!")
-            else:
-                messages.info(request, "Valoración actualizada.")
-
-        except (ValueError, TypeError):
-            messages.error(request, "Error en los datos enviados.")
-
+            messages.success(request, "¡Valoración guardada!")
+        except Exception as e:
+            messages.error(request, f"Error al guardar: {e}")
     return redirect('mostrar_elementos')
 
-
 def mostrar_elementos(request):
-    """Listado con buscador y visualización de afinidad"""
     query = request.GET.get('q')
-
-    if query:
-        # Filtramos por nombre que contenga el texto buscado
-        elementos = Elemento.objects.filter(nombre__icontains=query)
-    else:
-        elementos = Elemento.objects.all()
+    elementos = Elemento.objects.filter(nombre__icontains=query) if query else Elemento.objects.all()
 
     puntuaciones_dict = {}
     if request.user.is_authenticated:
         user_reviews = Reviews.objects.filter(usuario=request.user.nombre)
         for r in user_reviews:
-            puntuaciones_dict[r.elementoCode] = {
-                'puntuacion': r.puntuacion,
-                'comentario': r.comentario
-            }
+            puntuaciones_dict[r.elementoCode] = {'puntuacion': r.puntuacion, 'comentario': r.comentario}
 
-    for elemento in elementos:
-        review_data = puntuaciones_dict.get(elemento.code)
-        if review_data:
-            elemento.nota_actual = review_data['puntuacion']
-            elemento.comentario_actual = review_data['comentario']
-        else:
-            elemento.nota_actual = None
-            elemento.comentario_actual = ""
+    for el in elementos:
+        review = puntuaciones_dict.get(el.code)
+        el.nota_actual = review['puntuacion'] if review else None
+        el.comentario_actual = review['comentario'] if review else ""
 
     return render(request, 'elementos.html', {'elementos': elementos, 'query': query})

@@ -17,10 +17,12 @@ urlpatterns = [
     # --- Rankings y Visualización ---
     path('categorias/', views.show_categories, name='show_categories'),
     path('ranking/<int:id>/', views.go_rankings, name='go_rankings'),
+    path('editar-ranking/<str:ranking_id>/', views.editar_ranking, name='editar_ranking'), # NUEVA
     path('guardar-ranking/', views.save_top, name='save_top'),
-    path('mis-rankings/', views.rankings_usuario, name='rankings_usuario'),
+    path('mis-rankings/', views.ranking_usuario, name='rankings_usuario'),
+    path('eliminar-mi-ranking/<str:ranking_id>/', views.eliminar_mi_ranking, name='eliminar_mi_ranking'),
 
     # --- Listado General y Valoraciones ---
     path('explorar/', views.mostrar_elementos, name='mostrar_elementos'),
-    path('guardar-review/', views.guardar_review, name='guardar_review'), # <-- Nueva
+    path('guardar-review/', views.guardar_review, name='guardar_review'),
 ]

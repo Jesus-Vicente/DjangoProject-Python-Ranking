@@ -46,11 +46,7 @@
                             <span class="badge bg-secondary shadow-sm">Neutral</span>
                         {% endif %}
                     </div>
-
                     <span class="position-absolute top-0 end-0 m-2 badge bg-dark opacity-75">ID: {{ el.code }}</span>
-                    <div class="position-absolute bottom-0 start-0 m-2">
-                        <span class="badge rounded-pill bg-primary px-3">{{ el.posicion }}</span>
-                    </div>
                 </div>
 
                 <div class="card-body d-flex flex-column">
@@ -61,15 +57,19 @@
                         {% csrf_token %}
                         <input type="hidden" name="elementoCode" value="{{ el.code }}">
 
-                        <div class="mb-3">
-                            <label class="form-label small d-flex justify-content-between">
-                                <span>Nivel de Poder:</span>
-                                <span class="text-warning fw-bold">
-                                    {% if el.nota_actual %} ⚡ {{ el.nota_actual }}/5 {% endif %}
-                                </span>
-                            </label>
-                            <input type="range" name="puntuacion" class="form-range custom-range"
-                                   min="1" max="5" step="1" value="{{ el.nota_actual|default:3 }}">
+                        <div class="mb-3 text-center">
+                            <label class="form-label small d-block text-start">Nivel de Poder:</label>
+                            <div class="star-rating" data-id="{{ el.code }}">
+                                <i class="bi bi-star-fill star-icon {% if el.nota_actual >= 5 %}active{% endif %}" data-value="5"></i>
+                                <i class="bi bi-star-fill star-icon {% if el.nota_actual >= 4 %}active{% endif %}" data-value="4"></i>
+                                <i class="bi bi-star-fill star-icon {% if el.nota_actual >= 3 %}active{% endif %}" data-value="3"></i>
+                                <i class="bi bi-star-fill star-icon {% if el.nota_actual >= 2 %}active{% endif %}" data-value="2"></i>
+                                <i class="bi bi-star-fill star-icon {% if el.nota_actual >= 1 %}active{% endif %}" data-value="1"></i>
+                            </div>
+                            <input type="hidden" name="puntuacion" id="input-{{ el.code }}" value="{{ el.nota_actual|default:0 }}">
+                            <small class="text-info d-block mt-1" id="label-{{ el.code }}">
+                                {% if el.nota_actual %}Nota: {{ el.nota_actual }}/5{% else %}Sin calificar{% endif %}
+                            </small>
                         </div>
 
                         <div class="mb-3">
@@ -82,19 +82,6 @@
                         </button>
                     </form>
                 </div>
-
-                {% if el.nota_actual %}
-                <div class="card-footer bg-transparent border-info text-center py-1">
-                    <small class="text-info"><i class="bi bi-check-circle-fill"></i> Análisis completado</small>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% empty %}
-        <div class="col-12 text-center py-5">
-            <div class="p-5 border border-dashed border-secondary rounded">
-                <p class="text-muted fs-4">No se han encontrado jugadores con el nombre: <strong>{{ query }}</strong></p>
-                <a href="{% url 'mostrar_elementos' %}" class="btn btn-outline-info">Ver todos los jugadores</a>
             </div>
         </div>
         {% endfor %}
@@ -102,19 +89,80 @@
 </div>
 
 <style>
+    /* Efecto de las cartas */
     .card-hover { transition: transform 0.3s ease, border-color 0.3s ease; }
     .card-hover:hover {
         transform: translateY(-5px);
         border-color: #0dcaf0 !important;
     }
-    .custom-range::-webkit-slider-runnable-track { background: #333; height: 6px; border-radius: 3px; }
-    .custom-range::-webkit-slider-thumb { background: #ffc107; box-shadow: 0 0 5px #ffc107; }
+
+    /* SISTEMA DE ESTRELLAS CSS */
+    .star-rating {
+        display: flex;
+        flex-direction: row-reverse; /* Esto permite el truco del hover con el selector ~ */
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .star-icon {
+        font-size: 1.5rem;
+        color: #444; /* Gris por defecto */
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    /* Cuando la estrella está activa (guardada) */
+    .star-icon.active {
+        color: #ffc107;
+    }
+
+    /* Efecto hover: ilumina la estrella y las anteriores */
+    .star-icon:hover,
+    .star-icon:hover ~ .star-icon {
+        color: #ffeb3b !important;
+        transform: scale(1.2);
+        text-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+    }
+
+    /* Estilos del textarea */
     .form-control:focus {
         background-color: #000;
         color: #fff;
         border-color: #ffc107;
         box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
     }
-    .badge { font-weight: 700; text-transform: uppercase; }
 </style>
+
+<script>
+    document.querySelectorAll('.star-rating').forEach(ratingContainer => {
+        const stars = ratingContainer.querySelectorAll('.star-icon');
+        const code = ratingContainer.dataset.id;
+        const hiddenInput = document.getElementById('input-' + code);
+        const label = document.getElementById('label-' + code);
+
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const val = this.dataset.value;
+
+                // Actualizamos el input oculto
+                hiddenInput.value = val;
+
+                // Actualizamos el texto visual
+                label.innerText = "Nota: " + val + "/5";
+
+                // Limpiamos clases activas de todas las estrellas del contenedor
+                stars.forEach(s => s.classList.remove('active'));
+
+                // Añadimos la clase active a la seleccionada y sus "hermanas de la derecha"
+                // (debido al flex-direction: row-reverse)
+                this.classList.add('active');
+                let next = this.nextElementSibling;
+                while (next) {
+                    next.classList.add('active');
+                    next = next.nextElementSibling;
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

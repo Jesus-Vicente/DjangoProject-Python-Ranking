@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --inazuma-yellow: #fff200;
+        --inazuma-bg: #0b0e14;
+        --card-bg: #14181f;
+        --accent-blue: #00f2ff;
+        --border-color: rgba(255, 242, 0, 0.2);
+        --btn-shadow: #b38f00;
+    }
+
+    body { background-color: var(--inazuma-bg); }
+
+    /* --- ANIMACIONES --- */
+    @keyframes border-glow {
+        0%, 100% { border-color: var(--inazuma-yellow); box-shadow: 0 0 15px rgba(255, 242, 0, 0.4); }
+        33% { border-color: #fff; box-shadow: 0 0 20px rgba(255, 242, 0, 0.7); }
+        66% { border-color: var(--inazuma-yellow); box-shadow: 0 0 5px rgba(255, 242, 0, 0.2); }
+    }
+
+    @keyframes energy-pulse {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* --- TÍTULO --- */
+    .section-title {
+        font-style: italic;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-shadow: 0 0 15px rgba(255, 242, 0, 0.3);
+    }
+
+    /* --- BOTÓN NUEVA ESTRATEGIA (REDiseñado) --- */
+    .btn-strategy {
+        position: relative;
+        background: linear-gradient(135deg, var(--inazuma-yellow) 0%, #ffcc00 100%);
+        color: #000 !important;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 14px 35px;
+        border: none;
+        clip-path: polygon(15% 0%, 100% 0%, 85% 100%, 0% 100%);
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: 0 4px 0 var(--btn-shadow);
+    }
+
+    .btn-strategy::after {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+        transition: 0.5s;
+    }
+
+    .btn-strategy:hover::after { left: 100%; transition: 0.6s; }
+
+    .btn-strategy:hover {
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 0 25px rgba(255, 242, 0, 0.6), 0 6px 0 var(--btn-shadow);
+        background: linear-gradient(135deg, #fff200 0%, #ffffff 50%, #fff200 100%);
+        background-size: 200% 200%;
+        animation: energy-pulse 1.5s infinite;
+    }
+
+    .btn-strategy:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 var(--btn-shadow);
+    }
+
+    /* --- TARJETAS --- */
+    .ranking-card {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px !important;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .ranking-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        animation: border-glow 1s infinite alternate;
+        z-index: 10;
+    }
+
+    .card-header-inazuma {
+        background: rgba(255, 242, 0, 0.05);
+        border-bottom: 1px solid var(--border-color);
+        padding: 15px;
+    }
+
+    /* --- LISTA --- */
+    .player-row {
+        padding: 12px 18px;
+        border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+        transition: 0.2s;
+    }
+    .player-row:hover { background: rgba(0, 242, 255, 0.08); }
+
+    .position-badge {
+        width: 32px; height: 26px;
+        background: var(--inazuma-yellow);
+        color: #000;
+        font-weight: 900;
+        clip-path: polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.85rem;
+    }
+
+    .lightning-icon {
+        color: var(--inazuma-yellow);
+        font-size: 0.75rem;
+        margin-right: 8px;
+        filter: drop-shadow(0 0 5px var(--inazuma-yellow));
+    }
+
+    .mini-avatar {
+        width: 45px; height: 45px;
+        object-fit: cover;
+        border: 2px solid #30363d;
+        border-radius: 8px;
+    }
+
+    .pos-text {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        color: var(--accent-blue);
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    /* --- ACCIONES --- */
+    .btn-action {
+        width: 34px; height: 34px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.05);
+        color: #888;
+        transition: 0.3s;
+        border: 1px solid transparent;
+    }
+    .btn-edit:hover { color: var(--accent-blue); border-color: var(--accent-blue); background: rgba(0, 242, 255, 0.1); }
+    .btn-delete:hover { color: #ff4757; border-color: #ff4757; background: rgba(255, 71, 87, 0.1); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="text-white fw-bold section-title mb-0">
+                <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Mis Alineaciones
+            </h2>
+            <small class="text-muted font-monospace opacity-50">TACTICAL_PROTOCOL: CONNECTED</small>
+        </div>
+        <a href="{% url 'show_categories' %}" class="btn btn-strategy">
+            <i class="bi bi-lightning-charge-fill me-2"></i>Nueva Estrategia
+        </a>
+    </div>
+
+    <div class="row">
+        {% for ranking in rankings %}
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card ranking-card h-100">
+                    <div class="card-header-inazuma">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="text-white fw-bold mb-0" style="font-style: italic; letter-spacing: 1px;">{{ ranking.nombre_categoria }}</h5>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'editar_ranking' ranking.id %}" class="btn-action btn-edit" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <a href="{% url 'eliminar_mi_ranking' ranking.id %}" class="btn-action btn-delete" onclick="return confirm('¿Borrar alineación?')" title="Eliminar">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-0">
+                        {% for item in ranking.rankinLista %}
+                        <div class="player-row d-flex align-items-center">
+                            <i class="bi bi-lightning-fill lightning-icon"></i>
+                            <div class="position-badge me-3">{{ forloop.counter }}</div>
+                            <img src="{{ item.img }}" class="mini-avatar me-3 shadow-sm">
+                            <div class="flex-grow-1">
+                                <div class="pos-text">{{ item.pos }}</div>
+                                <div class="text-white fw-semibold small">{{ item.nombre }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
