@@ -17,7 +17,7 @@ urlpatterns = [
     # --- Rankings y Visualización ---
     path('categorias/', views.show_categories, name='show_categories'),
     path('ranking/<int:id>/', views.go_rankings, name='go_rankings'),
-    path('editar-ranking/<str:ranking_id>/', views.editar_ranking, name='editar_ranking'), # NUEVA
+    path('editar-ranking/<str:ranking_id>/', views.editar_ranking, name='editar_ranking'),
     path('guardar-ranking/', views.save_top, name='save_top'),
     path('mis-rankings/', views.ranking_usuario, name='rankings_usuario'),
     path('eliminar-mi-ranking/<str:ranking_id>/', views.eliminar_mi_ranking, name='eliminar_mi_ranking'),
@@ -25,4 +25,9 @@ urlpatterns = [
     # --- Listado General y Valoraciones ---
     path('explorar/', views.mostrar_elementos, name='mostrar_elementos'),
     path('guardar-review/', views.guardar_review, name='guardar_review'),
+
+    # --- Estadísticas (AJAX sincronizado) ---
+    path('estadisticas-globales/', views.estadisticas_view, name='ver_estadisticas'),
+    path('valoraciones/detalles/<int:elemento_id>/', views.get_valoraciones_detalles, name='get_valoraciones_detalles'),
+    path('personaje/<int:elemento_id>/', views.personaje_detalle, name='personaje_detalle'),
 ]

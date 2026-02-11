@@ -1,5 +1,8 @@
 import csv
 import json
+
+from django.db.models.aggregates import Avg, Count
+from django.http.response import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -287,6 +290,97 @@ def guardar_review(request):
         except Exception as e:
             messages.error(request, f"Error al guardar: {e}")
     return redirect('mostrar_elementos')
+
+
+def estadisticas_view(request):
+    # 1. Total de todas las reviews en el sistema
+    total_valoraciones = Reviews.objects.count()
+
+    # 2. Ranking de Élite: Elementos con más valoraciones
+    # Obtenemos los elementos y les pegamos los datos de las reviews
+    todos_elementos = Elemento.objects.all()
+    mas_valorados = []
+
+    for el in todos_elementos:
+        # Filtramos reviews para este elemento usando su 'code'
+        votos_el = Reviews.objects.filter(elementoCode=el.code)
+        conteo = votos_el.count()
+
+        if conteo > 0:
+            promedio = votos_el.aggregate(Avg('puntuacion'))['puntuacion__avg']
+            mas_valorados.append({
+                'nombre': el.nombre,
+                'imagen_url': el.imageUrl,
+                'posicion_campo': el.posicion,
+                'afinidad': el.afinidad,
+                'conteo': conteo,
+                'promedio': round(promedio, 1),
+                'id': el.code
+            })
+
+    # Ordenamos por conteo de votos (descendente) y tomamos el TOP 10
+    mas_valorados = sorted(mas_valorados, key=lambda x: x['conteo'], reverse=True)[:10]
+
+    # 3. Distribución por Categoría
+    categorias_lista = Categoria.objects.all()
+    promedios = []
+
+    for cat in categorias_lista:
+        # Contamos cuántas reviews pertenecen a elementos de esta categoría
+        votos_categoria = Reviews.objects.filter(
+            elementoCode__in=Elemento.objects.filter(categoriaCode=cat.code).values_list('code', flat=True)
+        ).count()
+
+        porcentaje = (votos_categoria / total_valoraciones * 100) if total_valoraciones > 0 else 0
+
+        promedios.append({
+            'nombre': cat.nombre,
+            'porcentaje': round(porcentaje, 1)
+        })
+
+    context = {
+        'total_valoraciones': total_valoraciones,
+        'mas_valorados': mas_valorados,
+        'promedios': promedios,
+    }
+
+    return render(request, 'estadisticas.html', context)
+
+
+def get_valoraciones_detalles(request, elemento_id):
+    """Devuelve las valoraciones de un personaje en formato JSON"""
+    # Filtramos por elementoCode
+    valoraciones_qs = Reviews.objects.filter(elementoCode=elemento_id).order_by('-fecha')
+
+    data = []
+    for v in valoraciones_qs:
+        data.append({
+            # Si el usuario es nulo por alguna razón, ponemos "Anónimo"
+            'usuario': v.usuario if v.usuario else "ANÓNIMO",
+            'puntuacion': v.puntuacion,
+            'comentario': v.comentario,
+            'fecha': v.fecha.strftime('%d/%m/%Y %H:%M')
+        })
+
+    return JsonResponse({'valoraciones': data})
+
+
+def personaje_detalle(request, elemento_id):
+    # 1. Buscamos el personaje usando el campo 'code' de tu modelo Elemento
+    personaje = get_object_or_404(Elemento, code=elemento_id)
+
+    # 2. Obtenemos todas las reviews asociadas a ese elementoCode
+    valoraciones = Reviews.objects.filter(elementoCode=elemento_id).order_by('-fecha')
+
+    # 3. Calculamos el promedio de puntuación
+    promedio_data = valoraciones.aggregate(Avg('puntuacion'))
+    promedio = promedio_data['puntuacion__avg'] if promedio_data['puntuacion__avg'] else 0
+
+    return render(request, 'detalles_personaje.html', {
+        'personaje': personaje,
+        'valoraciones': valoraciones,
+        'promedio': round(promedio, 1)
+    })
 
 def mostrar_elementos(request):
     query = request.GET.get('q')

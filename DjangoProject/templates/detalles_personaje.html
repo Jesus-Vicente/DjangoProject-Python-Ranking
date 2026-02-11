@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="main-bg-stats">
+    <div class="container animate__animated animate__fadeIn">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="{% url 'ver_estadisticas' %}" class="btn-back-cyber">
+                <i class="bi bi-arrow-left"></i> VOLVER AL PANEL
+            </a>
+            <span class="text-muted-cyan small">SISTEMA DE ANÁLISIS V.2.06</span>
+        </div>
+
+        <div class="stats-panel profile-grid">
+            <div class="row">
+                <div class="col-md-4 text-center border-end-cyber">
+                    <div class="avatar-frame-large mb-4">
+                        <img src="{{ personaje.imageUrl }}" onerror="this.src='https://ui-avatars.com/api/?name={{ personaje.nombre }}&background=00f2ff&color=000'" class="img-fluid">
+                    </div>
+                    <h1 class="glow-text fs-2 mb-1">{{ personaje.nombre|upper }}</h1>
+                    <span class="badge-pos-cyber fs-5 mb-3">{{ personaje.posicion|default:"ST" }}</span>
+
+                    <div class="mt-4 p-3 info-box">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">AFINIDAD</span>
+                            <span class="text-accent fw-bold">{{ personaje.afinidad|upper }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">CÓDIGO</span>
+                            <span class="text-white">ID-{{ personaje.code }}</span>
+                        </div>
+                        <hr class="opacity-25">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">RATING GLOBAL</span>
+                            <span class="text-gold fw-bold"><i class="bi bi-star-fill"></i> {{ promedio }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8 ps-md-5">
+                    <div class="panel-header mb-4 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-journal-text text-accent me-2"></i>HISTORIAL DE VALORACIONES</span>
+                        <span class="badge-tech">{{ valoraciones.count }} ENTRADAS</span>
+                    </div>
+
+                    <div class="comments-scroll">
+                        {% for v in valoraciones %}
+                        <div class="val-card-mini mb-3 animate__animated animate__fadeInRight">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-accent fw-bold"><i class="bi bi-person-badge me-1"></i>@{{ v.usuario|upper }}</span>
+                                <div class="rating-badge">{{ v.puntuacion }} / 5</div>
+                            </div>
+                            <p class="comment-text text-white">"{{ v.comentario }}"</p>
+                            <div class="text-end border-top-glass pt-2 mt-2">
+                                <small class="text-muted-cyan" style="font-size: 0.7rem;">REGISTRADO EL {{ v.fecha|date:"d M Y | H:i" }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5 opacity-50 border-glass-dashed">
+                            <i class="bi bi-shield-exclamation fs-1 mb-3 d-block"></i>
+                            <p class="cyber-font">DATOS NO ENCONTRADOS PARA ESTE SUJETO</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --accent: #00f2ff;
+        --accent-glow: rgba(0, 242, 255, 0.3);
+        --border-glass: rgba(0, 242, 255, 0.15);
+        --gold: #ffc107;
+    }
+
+    .main-bg-stats { min-height: 100vh; background: radial-gradient(circle at 50% 50%, #0d1b2a 0%, #020c1b 100%); padding: 40px 0; color: #e0e0e0; }
+
+    .stats-panel {
+        background: rgba(10, 25, 47, 0.85); border-radius: 24px; padding: 40px;
+        border: 1px solid var(--border-glass); backdrop-filter: blur(15px);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .border-end-cyber { border-right: 1px solid var(--border-glass); }
+    @media (max-width: 768px) { .border-end-cyber { border-right: none; border-bottom: 1px solid var(--border-glass); margin-bottom: 30px; padding-bottom: 30px; } }
+
+    .btn-back-cyber {
+        text-decoration: none; color: var(--accent); border: 1px solid var(--accent);
+        padding: 10px 25px; border-radius: 4px; background: transparent;
+        transition: 0.3s; font-size: 0.8rem; letter-spacing: 1px; font-weight: bold;
+    }
+    .btn-back-cyber:hover { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--accent-glow); }
+
+    .avatar-frame-large {
+        width: 100%; max-width: 250px; aspect-ratio: 1/1; margin: 0 auto;
+        border: 2px solid var(--accent); border-radius: 20px; overflow: hidden;
+        position: relative; box-shadow: 0 0 25px var(--accent-glow);
+    }
+    .avatar-frame-large img { width: 100%; height: 100%; object-fit: cover; }
+
+    .info-box { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); border-radius: 12px; }
+
+    .val-card-mini {
+        background: rgba(255, 255, 255, 0.03); padding: 20px; border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.05); transition: 0.3s;
+    }
+    .val-card-mini:hover { background: rgba(0, 242, 255, 0.05); border-color: var(--accent); }
+
+    .rating-badge {
+        background: var(--accent); color: #000; font-weight: 900;
+        padding: 2px 12px; border-radius: 4px; font-size: 0.85rem;
+    }
+
+    .comments-scroll { max-height: 500px; overflow-y: auto; padding-right: 15px; }
+    .comments-scroll::-webkit-scrollbar { width: 4px; }
+    .comments-scroll::-webkit-scrollbar-thumb { background: var(--accent); }
+
+    .glow-text { color: #fff; text-shadow: 0 0 10px var(--accent-glow); letter-spacing: 2px; }
+    .text-muted-cyan { color: #64ffda; opacity: 0.7; }
+    .badge-tech { background: rgba(0, 242, 255, 0.1); color: var(--accent); padding: 5px 15px; border-radius: 20px; font-size: 0.7rem; border: 1px solid var(--border-glass); }
+</style>
+{% endblock %}

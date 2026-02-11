@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block body %}
-<div class="container-fluid main-bg {% if user.is_authenticated %}pt-5{% else %}d-flex align-items-center justify-content-center{% endif %}">
+<div class="container-fluid main-bg">
 
     {% if not user.is_authenticated %}
         <div class="text-center content-wrapper animate__animated animate__fadeIn">
@@ -11,7 +11,7 @@
             </h1>
             <p class="subtitle mb-5 text-uppercase tracking-widest">Gestión de Equipos y Estadísticas de Nivel Nacional</p>
 
-            <div class="row g-4 justify-content-center">
+            <div class="row g-4 justify-content-center w-100 m-0">
                 <div class="col-md-5 col-lg-4">
                     <a href="{% url 'do_login' %}" class="text-decoration-none">
                         <div class="card card-custom card-login h-100 shadow-lg border-0">
@@ -42,64 +42,123 @@
         </div>
 
     {% else %}
-        <div class="container d-flex flex-column align-items-center animate__animated animate__zoomIn">
-            <h2 class="text-white mb-5" style="text-shadow: 0 0 10px rgba(255,193,7,0.5);">
-                ⚡ Bienvenido, Entrenador <span class="text-warning">{{ user.nombre }}</span> ⚡
+        <div class="container content-wrapper d-flex flex-column align-items-center animate__animated animate__zoomIn">
+            <h2 class="text-white text-center mb-5 greeting-text">
+                ⚡ Bienvenido, {% if user.rol == 'admin' %}Administrador{% else %}Entrenador{% endif %} <span class="text-warning">{{ user.nombre }}</span> ⚡
             </h2>
 
-            <div class="row g-4 justify-content-center w-100">
-                <div class="col-10 col-md-4">
-                    <a href="{% url 'show_categories' %}" class="text-decoration-none">
-                        <div class="card text-center text-white bg-dark-blue card-hover h-100 shadow">
-                            <div class="card-body py-5">
-                                <i class="bi bi-trophy-fill mb-3 d-block text-warning" style="font-size: 3rem;"></i>
-                                <h3 class="card-title">Torneos y Rankings</h3>
-                                <p class="small opacity-75">Ordena a tus jugadores</p>
+            {% if user.rol == 'admin' %}
+                <div class="row g-4 justify-content-center w-100 mb-4">
+                    <div class="col-12 col-md-4">
+                        <a href="{% url 'show_categories' %}" class="text-decoration-none">
+                            <div class="card text-center text-white bg-dark-blue card-admin-glow h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-trophy-fill mb-3 d-block text-warning" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title fw-bold">Torneos</h3>
+                                    <p class="small opacity-75">Gestión de niveles</p>
+                                </div>
                             </div>
-                        </div>
-                    </a>
+                        </a>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <a href="{% url 'mostrar_elementos' %}" class="text-decoration-none">
+                            <div class="card text-center text-white bg-purple card-admin-glow h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-star-fill mb-3 d-block text-info" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title fw-bold">Valoraciones</h3>
+                                    <p class="small opacity-75">Control de rendimiento</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <a href="{% url 'ver_estadisticas' %}" class="text-decoration-none">
+                            <div class="card text-center text-white bg-stats card-admin-glow h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-cpu-fill mb-3 d-block text-cyan" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title fw-bold">Estadísticas</h3>
+                                    <p class="small opacity-75">Métricas del sistema</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
                 </div>
 
-                <div class="col-10 col-md-4">
-                    <a href="{% url 'mostrar_elementos' %}" class="text-decoration-none">
-                        <div class="card text-center text-white bg-purple card-hover h-100 shadow">
-                            <div class="card-body py-5">
-                                <i class="bi bi-star-fill mb-3 d-block text-info" style="font-size: 3rem;"></i>
-                                <h3 class="card-title">Valoraciones</h3>
-                                <p class="small opacity-75">Puntúa el rendimiento</p>
+                <div class="row g-4 justify-content-center w-100">
+                    <div class="col-12 col-md-5 col-lg-4">
+                        <a href="{% url 'rankings_usuario' %}" class="text-decoration-none">
+                            <div class="card text-center text-white bg-blue card-admin-glow h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-bar-chart-line-fill mb-3 d-block text-white" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title fw-bold">Mis Tops</h3>
+                                    <p class="small opacity-75">Listas personales</p>
+                                </div>
                             </div>
-                        </div>
-                    </a>
+                        </a>
+                    </div>
+                    <div class="col-12 col-md-5 col-lg-4">
+                        <a href="{% url 'go_admin_panel' %}" class="text-decoration-none">
+                            <div class="card text-center text-dark bg-yellow card-admin-glow glow-pulse h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-shield-lock-fill mb-3 d-block" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title fw-bold">Panel Admin</h3>
+                                    <p class="small fw-bold opacity-75">Gestión CSV</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
                 </div>
-            </div>
 
-            <div class="row g-4 justify-content-center w-100 mt-2">
-                {% if user.rol == 'admin' %}
-                <div class="col-10 col-md-4">
-                    <a href="{% url 'go_admin_panel' %}" class="text-decoration-none">
-                        <div class="card text-center text-dark bg-yellow card-hover h-100 shadow">
-                            <div class="card-body py-5">
-                                <i class="bi bi-shield-lock-fill mb-3 d-block" style="font-size: 3rem;"></i>
-                                <h3 class="card-title fw-bold">Admin</h3>
-                                <p class="small fw-bold opacity-75">Gestión de datos CSV</p>
+            {% else %}
+                <div class="row g-4 justify-content-center w-100 mb-4">
+                    <div class="col-10 col-md-6 col-lg-5">
+                        <a href="{% url 'show_categories' %}" class="text-decoration-none">
+                            <div class="card text-center text-white bg-dark-blue card-hover h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-trophy-fill mb-3 d-block text-warning" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title">Torneos y Rankings</h3>
+                                    <p class="small opacity-75">Ordena a tus jugadores</p>
+                                </div>
                             </div>
-                        </div>
-                    </a>
-                </div>
-                {% endif %}
-
-                <div class="col-10 col-md-4">
-                    <a href="{% url 'rankings_usuario' %}" class="text-decoration-none">
-                        <div class="card text-center text-white bg-blue card-hover h-100 shadow">
-                            <div class="card-body py-5">
-                                <i class="bi bi-bar-chart-line-fill mb-3 d-block text-white" style="font-size: 3rem;"></i>
-                                <h3 class="card-title">Mis Tops</h3>
-                                <p class="small opacity-75">Tus listas personalizadas</p>
+                        </a>
+                    </div>
+                    <div class="col-10 col-md-6 col-lg-5">
+                        <a href="{% url 'mostrar_elementos' %}" class="text-decoration-none">
+                            <div class="card text-center text-white bg-purple card-hover h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-star-fill mb-3 d-block text-info" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title">Valoraciones</h3>
+                                    <p class="small opacity-75">Puntúa el rendimiento</p>
+                                </div>
                             </div>
-                        </div>
-                    </a>
+                        </a>
+                    </div>
                 </div>
-            </div>
+                <div class="row g-4 justify-content-center w-100">
+                    <div class="col-10 col-md-6 col-lg-5">
+                        <a href="{% url 'ver_estadisticas' %}" class="text-decoration-none">
+                            <div class="card text-center text-white bg-stats card-hover h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-cpu-fill mb-3 d-block text-cyan" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title">Estadísticas</h3>
+                                    <p class="small opacity-75">Métricas nacionales</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-10 col-md-6 col-lg-5">
+                        <a href="{% url 'rankings_usuario' %}" class="text-decoration-none">
+                            <div class="card text-center text-white bg-blue card-hover h-100 shadow">
+                                <div class="card-body py-5">
+                                    <i class="bi bi-bar-chart-line-fill mb-3 d-block text-white" style="font-size: 3rem;"></i>
+                                    <h3 class="card-title">Mis Tops</h3>
+                                    <p class="small opacity-75">Tus listas personalizadas</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     {% endif %}
 </div>
@@ -108,51 +167,92 @@
     :root {
         --bg-dark-space: #020c1b;
         --bright-gold: #ffc107;
-        --dark-blue-card: #0a192f;
-        --purple-card: #4b2291;
-        --blue-card: #0d6efd;
+        --cyan-stats: #00f2ff;
     }
 
+    /* CONTENEDOR PRINCIPAL RESPONSIVE */
     .main-bg {
         min-height: 100vh;
         background: radial-gradient(circle at center, #0a192f 0%, #020c1b 100%);
+        background-attachment: fixed; /* Mantiene el fondo quieto al hacer scroll */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Centra verticalmente si hay poco contenido */
+        align-items: center;
+        padding: 60px 15px 80px 15px; /* Padding superior para nav y mucho espacio inferior */
         overflow-x: hidden;
+    }
+
+    .content-wrapper {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
     }
 
     .main-title {
         color: var(--bright-gold);
         text-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
         letter-spacing: 5px;
+        font-size: clamp(2.5rem, 8vw, 5rem); /* Se ajusta solo según la pantalla */
     }
 
-    .card-custom { border-radius: 20px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .greeting-text {
+        text-shadow: 0 0 10px rgba(255,193,7,0.5);
+        font-size: clamp(1.2rem, 4vw, 2rem);
+    }
+
+    /* CARDS */
+    .card-custom, .card-hover, .card-admin-glow {
+        border-radius: 20px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .card-hover:hover, .card-admin-glow:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.6) !important;
+        filter: brightness(1.15);
+        z-index: 5;
+    }
+
+    /* ADMIN PREMIUM BORDER */
+    .card-admin-glow {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .card-admin-glow:hover {
+        border-color: var(--bright-gold);
+        box-shadow: 0 0 25px rgba(255, 193, 7, 0.3) !important;
+    }
+
+    /* ANIMACIONES */
+    .glow-pulse {
+        animation: admin-pulse 2s infinite;
+        border: 2px solid var(--bright-gold) !important;
+    }
+    @keyframes admin-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+        70% { box-shadow: 0 0 0 15px rgba(255, 193, 7, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+
+    /* COLORES Y UTILIDADES */
     .card-login { background: rgba(13, 110, 253, 0.1); border: 2px solid #0d6efd !important; }
     .card-register { background: var(--bright-gold); border: none !important; }
-
-    .icon-circle {
-        width: 80px; height: 80px;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-    }
-
+    .icon-circle { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .bg-dark-blue { background: linear-gradient(145deg, #0a192f, #112240); }
     .bg-purple { background: linear-gradient(145deg, #4b2291, #6f42c1); }
     .bg-blue { background: linear-gradient(145deg, #0d6efd, #0a58ca); }
     .bg-yellow { background: linear-gradient(145deg, #ffc107, #ff9800); }
-
-    .card-hover {
-        border-radius: 20px;
-        transition: all 0.3s ease;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .card-hover:hover {
-        transform: translateY(-10px) scale(1.02);
-        box-shadow: 0 15px 30px rgba(0,0,0,0.6) !important;
-        filter: brightness(1.15);
-    }
-
+    .bg-stats { background: linear-gradient(145deg, #003a4d, #005f73); }
+    .text-cyan { color: var(--cyan-stats); }
     .shadow-glow-blue { box-shadow: 0 0 20px rgba(13, 110, 253, 0.5); }
     .shadow-glow-yellow { box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); }
+
+    /* RESPONSIVE PARA MÓVILES */
+    @media (max-width: 768px) {
+        .main-bg { padding-top: 40px; padding-bottom: 50px; }
+        .card-body { padding: 2.5rem 1.5rem !important; }
+        .greeting-text { margin-bottom: 2rem !important; }
+    }
 </style>
 {% endblock %}

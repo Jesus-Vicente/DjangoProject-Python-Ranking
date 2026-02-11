@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="main-bg-stats">
+    <div class="stats-page-wrapper animate__animated animate__fadeIn">
+
+        <div class="header-main text-center mb-5">
+            <h1 class="glow-text">CENTRO DE DATOS</h1>
+            <div class="status-bar">
+                <span class="pulse-dot"></span>
+                <span class="status-text">SISTEMA ACTIVO // {{ total_valoraciones|default:"0" }} REGISTROS EN NÚCLEO</span>
+            </div>
+        </div>
+
+        <div class="total-valoraciones-card mb-5">
+            <div class="card-glow"></div>
+            <div class="metric-content">
+                <div class="icon-circle shadow-accent"><i class="bi bi-database-fill-check color-cyan"></i></div>
+                <div class="m-info text-center">
+                    <span class="m-label">VALORACIONES TOTALES</span>
+                    <span class="m-value counter-value">{{ total_valoraciones }}</span>
+                </div>
+                <div class="icon-circle shadow-gold"><i class="bi bi-star-half color-gold"></i></div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-12">
+                <div class="stats-panel">
+                    <div class="panel-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-shield-shaded text-accent me-2"></i>RANKING DE ÉLITE</span>
+                        <span class="badge-tech">TOP {{ mas_valorados|length }} SUJETOS ANALIZADOS</span>
+                    </div>
+                    <p class="text-muted-cyan small mt-2">
+                        <i class="bi bi-terminal me-1"></i> Seleccione una entrada para desplegar el expediente completo.
+                    </p>
+
+                    <div class="table-container-clean mt-3">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">RANK</th>
+                                    <th>PERSONAJE</th>
+                                    <th class="text-center">POSICIÓN</th>
+                                    <th class="text-center">AFINIDAD</th>
+                                    <th class="text-end">REVIEWS / SCORE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in mas_valorados %}
+                                <tr class="stat-row"
+                                    onclick="window.location.href='{% url 'personaje_detalle' item.id %}'">
+                                    <td class="text-center">
+                                        <span class="rank-number">#0{{ forloop.counter }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-frame me-3">
+                                                <img src="{{ item.imagen_url }}" onerror="this.src='https://ui-avatars.com/api/?name={{ item.nombre }}&background=00f2ff&color=000'" class="char-img">
+                                            </div>
+                                            <div class="char-info">
+                                                <span class="player-name d-block">{{ item.nombre|upper }}</span>
+                                                <small class="text-muted-cyan">ID-LOG: {{ item.id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge-pos-cyber">{{ item.posicion_campo|default:"ST" }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="afi-wrapper">
+                                            {% with afi=item.afinidad|lower %}
+                                            <span class="afi-text afi-{{ afi }}">
+                                                {% if afi == "fuego" %}<i class="bi bi-fire"></i>
+                                                {% elif afi == "aire" %}<i class="bi bi-wind"></i>
+                                                {% elif afi == "bosque" %}<i class="bi bi-tree-fill"></i>
+                                                {% elif afi == "montaña" %}<i class="bi bi-mountain-fill"></i>
+                                                {% else %}<i class="bi bi-cpu"></i>{% endif %}
+                                                {{ item.afinidad|upper }}
+                                            </span>
+                                            {% endwith %}
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="val-group">
+                                            <span class="text-accent fw-bold fs-5 d-block">
+                                                {{ item.conteo }} <small class="fs-6 opacity-50">ENTRADAS</small>
+                                            </span>
+                                            <div class="rating-stars">
+                                                <i class="bi bi-star-fill color-gold small"></i>
+                                                <span class="text-gold fw-bold">{{ item.promedio|default:"0.0" }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center py-5 text-muted">Sincronizando con el servidor central... No hay datos.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --accent: #00f2ff;
+        --accent-glow: rgba(0, 242, 255, 0.3);
+        --gold: #ffc107;
+        --border-glass: rgba(0, 242, 255, 0.15);
+        --color-fuego: #ff4d4d;
+        --color-aire: #4de6ff;
+        --color-bosque: #2ecc71;
+        --color-montaña: #a67c52;
+    }
+
+    .main-bg-stats { min-height: 100vh; background: radial-gradient(circle at 50% 50%, #0d1b2a 0%, #020c1b 100%); padding: 60px 20px; color: #e0e0e0; font-family: 'Segoe UI', Roboto, sans-serif; }
+
+    .stats-panel { background: rgba(10, 25, 47, 0.85); border-radius: 24px; padding: 30px; border: 1px solid var(--border-glass); backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+
+    /* Estilos dinámicos para Afinidades */
+    .afi-text { font-size: 0.75rem; font-weight: 800; padding: 5px 14px; border-radius: 6px; display: inline-block; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
+    .afi-fuego { color: var(--color-fuego); border-color: var(--color-fuego); box-shadow: inset 0 0 5px var(--color-fuego); }
+    .afi-aire { color: var(--color-aire); border-color: var(--color-aire); box-shadow: inset 0 0 5px var(--color-aire); }
+    .afi-bosque { color: var(--color-bosque); border-color: var(--color-bosque); box-shadow: inset 0 0 5px var(--color-bosque); }
+    .afi-montaña { color: var(--color-montaña); border-color: var(--color-montaña); box-shadow: inset 0 0 5px var(--color-montaña); }
+
+    /* Tabla y Filas */
+    .stat-row { background: rgba(255,255,255,0.01); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .stat-row:hover { background: rgba(0, 242, 255, 0.08); transform: translateX(8px); border-color: var(--accent); }
+
+    .rank-number { font-family: 'Courier New', monospace; font-weight: 900; color: var(--accent); font-size: 1.1rem; }
+    .player-name { font-weight: 700; letter-spacing: 0.5px; }
+
+    /* Header y Cards */
+    .glow-text { font-weight: 900; background: linear-gradient(to bottom, #fff 20%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(0, 242, 255, 0.4); }
+    .badge-pos-cyber { border: 1px solid var(--accent); background: rgba(0, 242, 255, 0.05); color: var(--accent); padding: 4px 12px; font-weight: 900; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%); }
+
+    .avatar-frame { width: 55px; height: 55px; border-radius: 12px; border: 2px solid var(--accent); overflow: hidden; box-shadow: 0 0 15px var(--accent-glow); }
+    .char-img { width: 100%; height: 100%; object-fit: cover; }
+
+    .total-valoraciones-card { background: rgba(10, 25, 47, 0.9); border: 1px solid var(--accent); border-radius: 24px; padding: 30px; max-width: 600px; margin: 0 auto; position: relative; }
+    .m-value { font-size: 4.5rem; font-weight: 900; color: var(--accent); text-shadow: 0 0 25px var(--accent); line-height: 1; }
+
+    .status-bar { display: inline-flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 5px 20px; border-radius: 50px; border: 1px solid var(--border-glass); }
+    .pulse-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s infinite; }
+
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 242, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0); } }
+</style>
+{% endblock %}
